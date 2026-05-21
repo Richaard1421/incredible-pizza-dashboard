@@ -83,7 +83,7 @@ app.get('/sheets/:sheetId', function(req, res) {
   });
 });
 
-app.listen(PORT, function() {
+app.listen(PORT, '0.0.0.0', function() {
   console.log('✅ Servidor corriendo en http://localhost:' + PORT);
   console.log('📡 Proxy → https://' + API_HOST + ':' + API_PORT);
 });
