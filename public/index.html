@@ -459,7 +459,7 @@ function renderRedencion(items){
 var SHEET_ID='1RsLPQerkU_Oe38shlxQeM5H07r410pWKiE7woQ58fd8';
 
 function sheetUrl(sheetName){
-  return 'http://localhost:3000/sheets/'+SHEET_ID+'?sheet='+encodeURIComponent(sheetName)+'&t='+Date.now();
+  return '/sheets/'+SHEET_ID+'?sheet='+encodeURIComponent(sheetName)+'&t='+Date.now();
 }
 
 async function fetchSheet(sheetName){
