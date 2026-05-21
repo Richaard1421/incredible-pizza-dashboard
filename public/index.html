@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Incredible Pizza — Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  :root { --primary:#D85A30; --primary-dark:#b84820; --bg:#0f0f0f; --bg2:#1a1a1a; --bg3:#242424; --border:#2e2e2e; --text:#f0f0f0; --muted:#888; --green:#4ade80; --yellow:#facc15; --red:#f87171; --blue:#60a5fa; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:'Segoe UI',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; }
+  .sidebar { position:fixed; top:0; left:0; width:220px; height:100vh; background:var(--bg2); border-right:1px solid var(--border); display:flex; flex-direction:column; z-index:100; }
+  .sidebar-logo { padding:20px 16px 16px; border-bottom:1px solid var(--border); }
+  .brand { font-size:16px; font-weight:700; color:var(--primary); }
+  .sub { font-size:11px; color:var(--muted); margin-top:2px; }
+  .nav-item { display:flex; align-items:center; gap:10px; padding:11px 16px; cursor:pointer; font-size:13px; color:var(--muted); border-left:3px solid transparent; transition:all .15s; }
+  .nav-item:hover { background:var(--bg3); color:var(--text); }
+  .nav-item.active { border-left-color:var(--primary); color:var(--text); background:var(--bg3); }
+  .sidebar-footer { margin-top:auto; padding:12px 16px; border-top:1px solid var(--border); font-size:11px; color:var(--muted); }
+  .dot-live { display:inline-block; width:7px; height:7px; border-radius:50%; background:#4ade80; margin-right:5px; animation:pulse 2s infinite; }
+  .dot-off { display:inline-block; width:7px; height:7px; border-radius:50%; background:var(--red); margin-right:5px; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+  .main { margin-left:220px; min-height:100vh; }
+  .topbar { position:sticky; top:0; z-index:50; background:var(--bg2); border-bottom:1px solid var(--border); padding:12px 24px; display:flex; align-items:center; justify-content:space-between; }
+  .topbar-title { font-size:15px; font-weight:600; }
+  .topbar-controls { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+  input[type="date"],input[type="text"],input[type="password"],input[type="number"] { background:var(--bg3); border:1px solid var(--border); color:var(--text); padding:6px 10px; border-radius:6px; font-size:12px; outline:none; }
+  .btn { padding:7px 14px; border-radius:6px; font-size:12px; font-weight:600; cursor:pointer; border:none; transition:all .15s; }
+  .btn-primary { background:var(--primary); color:#fff; }
+  .btn-primary:hover { background:var(--primary-dark); }
+  .btn-secondary { background:var(--bg3); color:var(--text); border:1px solid var(--border); }
+  .btn-secondary:hover { background:var(--border); }
+  .btn:disabled { opacity:.5; cursor:default; }
+  .page { display:none; padding:24px; }
+  .page.active { display:block; }
+  .metrics-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:12px; margin-bottom:20px; }
+  .metric-card { background:var(--bg2); border:1px solid var(--border); border-radius:10px; padding:16px; position:relative; overflow:hidden; }
+  .metric-card::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; background:var(--primary); }
+  .metric-label { font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.5px; margin-bottom:8px; }
+  .metric-value { font-size:26px; font-weight:700; color:var(--text); }
+  .metric-sub { font-size:11px; color:var(--muted); margin-top:4px; }
+  .charts-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:20px; }
+  .chart-card { background:var(--bg2); border:1px solid var(--border); border-radius:10px; padding:16px; }
+  .chart-title { font-size:13px; font-weight:600; margin-bottom:14px; }
+  .chart-wrap { position:relative; height:220px; }
+  .table-card { background:var(--bg2); border:1px solid var(--border); border-radius:10px; overflow:hidden; margin-bottom:20px; }
+  .table-header { padding:14px 16px; border-bottom:1px solid var(--border); font-size:13px; font-weight:600; display:flex; justify-content:space-between; align-items:center; }
+  .table-wrap { overflow-x:auto; }
+  table { width:100%; border-collapse:collapse; font-size:12px; }
+  th { text-align:left; padding:10px 12px; color:var(--muted); font-weight:500; border-bottom:1px solid var(--border); white-space:nowrap; }
+  td { padding:10px 12px; border-bottom:1px solid var(--border); color:var(--text); white-space:nowrap; }
+  tr:last-child td { border-bottom:none; }
+  tr:hover td { background:var(--bg3); }
+  .badge { display:inline-block; padding:2px 8px; border-radius:999px; font-size:10px; font-weight:600; }
+  .badge-green { background:rgba(74,222,128,.15); color:var(--green); }
+  .badge-red { background:rgba(248,113,113,.15); color:var(--red); }
+  .badge-blue { background:rgba(96,165,250,.15); color:var(--blue); }
+  .rank-num { width:28px; height:28px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; }
+  .rank-1{background:rgba(250,204,21,.2);color:var(--yellow);} .rank-2{background:rgba(156,163,175,.2);color:#9ca3af;} .rank-3{background:rgba(180,83,9,.2);color:#f97316;} .rank-other{background:var(--bg3);color:var(--muted);}
+  .msg { padding:12px 16px; border-radius:8px; font-size:13px; margin-bottom:16px; }
+  .msg-info { background:rgba(96,165,250,.1); border:1px solid rgba(96,165,250,.3); color:var(--blue); }
+  .msg-err { background:rgba(248,113,113,.1); border:1px solid rgba(248,113,113,.3); color:var(--red); }
+  .msg-ok { background:rgba(74,222,128,.1); border:1px solid rgba(74,222,128,.3); color:var(--green); }
+  .config-section { background:var(--bg2); border:1px solid var(--border); border-radius:10px; padding:20px; margin-bottom:16px; }
+  .config-title { font-size:13px; font-weight:600; margin-bottom:14px; color:var(--primary); }
+  .config-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .field { display:flex; flex-direction:column; gap:5px; }
+  .field label { font-size:11px; color:var(--muted); }
+  .field input { width:100%; }
+  .top-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:20px; }
+  .empty { text-align:center; padding:40px; color:var(--muted); font-size:13px; }
+</style>
+</head>
+<body>
+<div class="sidebar">
+  <div class="sidebar-logo">
+    <div class="brand">🍕 Incredible Pizza</div>
+    <div class="sub">Sacoa Dashboard v1.0</div>
+  </div>
+  <div style="padding:8px 0">
+    <div class="nav-item active" id="nav-ventas" onclick="showPage('ventas')"><span>💰</span> Ventas</div>
+    <div class="nav-item" id="nav-juegos" onclick="showPage('juegos')"><span>🕹️</span> Juegos</div>
+    <div class="nav-item" id="nav-redencion" onclick="showPage('redencion')"><span>🎁</span> Redención</div>
+    <div class="nav-item" id="nav-config" onclick="showPage('config')"><span>⚙️</span> Configuración</div>
+    <div class="nav-item" id="nav-reportes" onclick="showPage('reportes')"><span>📊</span> Reportes KPI</div>
+  </div>
+  <div class="sidebar-footer"><span id="conn-dot" class="dot-off"></span><span id="conn-text">Sin conectar</span></div>
+</div>
+
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-title" id="page-title">💰 Ventas</div>
+    <div class="topbar-controls">
+      <input type="date" id="date-from">
+      <input type="date" id="date-to">
+      <button class="btn btn-primary" id="btn-load" onclick="loadAll()">🔄 Consultar</button>
+      <button class="btn btn-secondary" onclick="loadDemo()">📊 Demo</button>
+    </div>
+  </div>
+
+  <div class="page active" id="page-ventas">
+    <div id="msg-ventas"></div>
+    <div class="metrics-grid">
+      <div class="metric-card"><div class="metric-label">Total ventas</div><div class="metric-value" id="v-total">—</div><div class="metric-sub">en el período</div></div>
+      <div class="metric-card"><div class="metric-label">Transacciones</div><div class="metric-value" id="v-trans">—</div><div class="metric-sub">registradas</div></div>
+      <div class="metric-card"><div class="metric-label">Promedio por tx</div><div class="metric-value" id="v-avg">—</div><div class="metric-sub">monto promedio</div></div>
+      <div class="metric-card"><div class="metric-label">Día pico</div><div class="metric-value" style="font-size:16px" id="v-peak">—</div><div class="metric-sub">más ventas</div></div>
+    </div>
+    <div class="charts-grid">
+      <div class="chart-card"><div class="chart-title">Ventas por día</div><div class="chart-wrap"><canvas id="chart-ventas-dia"></canvas></div></div>
+      <div class="chart-card"><div class="chart-title">Tipo de transacción</div><div class="chart-wrap"><canvas id="chart-ventas-tipo"></canvas></div></div>
+    </div>
+    <div class="table-card">
+      <div class="table-header"><span>Últimas transacciones</span><span id="v-count" style="font-size:11px;color:var(--muted)"></span></div>
+      <div class="table-wrap"><table><thead><tr><th>ID</th><th>Fecha/Hora</th><th>Tarjeta</th><th>Tienda</th><th>Tipo</th><th>Monto</th><th>Estado</th></tr></thead><tbody id="v-table"><tr><td colspan="7" class="empty">Haz clic en 📊 Demo para ver datos de ejemplo</td></tr></tbody></table></div>
+    </div>
+  </div>
+
+  <div class="page" id="page-juegos">
+    <div id="msg-juegos"></div>
+    <div class="metrics-grid">
+      <div class="metric-card"><div class="metric-label">Total jugadas</div><div class="metric-value" id="j-total">—</div><div class="metric-sub">en el período</div></div>
+      <div class="metric-card"><div class="metric-label">Ingresos juegos</div><div class="metric-value" id="j-ingresos">—</div><div class="metric-sub">monto total</div></div>
+      <div class="metric-card"><div class="metric-label">Juegos activos</div><div class="metric-value" id="j-activos">—</div><div class="metric-sub">máquinas</div></div>
+      <div class="metric-card"><div class="metric-label">Promedio jugadas</div><div class="metric-value" id="j-avg">—</div><div class="metric-sub">por máquina</div></div>
+    </div>
+    <div class="charts-grid">
+      <div class="chart-card"><div class="chart-title">Jugadas por día</div><div class="chart-wrap"><canvas id="chart-juegos-dia"></canvas></div></div>
+      <div class="chart-card"><div class="chart-title">Tipo de crédito</div><div class="chart-wrap"><canvas id="chart-credito-tipo"></canvas></div></div>
+    </div>
+    <div class="top-grid">
+      <div class="table-card">
+        <div class="table-header">🏆 Top 10 más jugadas</div>
+        <div class="table-wrap"><table><thead><tr><th>#</th><th>Juego</th><th>Jugadas</th><th>Ingresos</th></tr></thead><tbody id="top-mas"><tr><td colspan="4" class="empty">Sin datos</td></tr></tbody></table></div>
+      </div>
+      <div class="table-card">
+        <div class="table-header">📉 Top 10 menos jugadas</div>
+        <div class="table-wrap"><table><thead><tr><th>#</th><th>Juego</th><th>Jugadas</th><th>Ingresos</th></tr></thead><tbody id="top-menos"><tr><td colspan="4" class="empty">Sin datos</td></tr></tbody></table></div>
+      </div>
+    </div>
+    <div class="table-card">
+      <div class="table-header">📋 Detalle de transacciones</div>
+      <div class="table-wrap"><table><thead><tr><th>ID</th><th>Fecha</th><th>Tarjeta</th><th>Juego</th><th>Descripción</th><th>Tipo crédito</th><th>Monto</th></tr></thead><tbody id="j-table"><tr><td colspan="7" class="empty">Haz clic en 📊 Demo para ver datos de ejemplo</td></tr></tbody></table></div>
+    </div>
+  </div>
+
+  <div class="page" id="page-redencion">
+    <div id="msg-red"></div>
+    <div class="metrics-grid">
+      <div class="metric-card"><div class="metric-label">Artículos redimidos</div><div class="metric-value" id="r-total">—</div></div>
+      <div class="metric-card"><div class="metric-label">Valor total</div><div class="metric-value" id="r-valor">—</div></div>
+      <div class="metric-card"><div class="metric-label">Stock actual</div><div class="metric-value" id="r-stock">—</div></div>
+    </div>
+    <div class="table-card">
+      <div class="table-header">Inventario de redención</div>
+      <div class="table-wrap"><table><thead><tr><th>Código</th><th>Nombre</th><th>Redimidos</th><th>Stock</th><th>Precio</th><th>Costo tickets</th></tr></thead><tbody id="r-table"><tr><td colspan="6" class="empty">Haz clic en 📊 Demo para ver datos de ejemplo</td></tr></tbody></table></div>
+    </div>
+  </div>
+
+  <!-- REPORTES KPI PAGE -->
+  <div class="page" id="page-reportes">
+    <div id="msg-reportes"></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px;">
+      <div>
+        <div style="font-size:18px;font-weight:700;color:var(--text)">Dashboard KPI — Incredible Pizza</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px">Datos de Google Sheets · <span id="sheets-last-update">Cargando...</span></div>
+      </div>
+      <button class="btn btn-primary" onclick="loadSheets()">🔄 Actualizar desde Sheets</button>
+    </div>
+
+    <!-- VENTAS DEL DÍA -->
+    <div class="table-card" style="margin-bottom:20px;">
+      <div class="table-header">💰 Ventas por Centro — Último registro</div>
+      <div style="padding:16px;">
+        <div id="centros-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:16px;"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+          <div class="metric-card" style="border-color:var(--primary)">
+            <div class="metric-label">Total Día</div>
+            <div class="metric-value" id="r-total-dia" style="color:var(--primary)">—</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">Meta Día</div>
+            <div class="metric-value" id="r-meta-dia">—</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">% Cumplimiento</div>
+            <div class="metric-value" id="r-cumpl" style="font-size:20px">—</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TABLA ACUMULADO POR CENTRO -->
+    <div class="table-card" style="margin-bottom:20px;">
+      <div class="table-header">📈 Acumulado por Centro</div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Centro</th><th>Real Acum ($)</th><th>Meta Acum ($)</th><th>% Cumpl</th><th>Año Anterior</th><th>% vs AA</th><th>Semáforo</th></tr></thead>
+          <tbody id="r-centros-table"><tr><td colspan="7" class="empty">Cargando datos de Sheets...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- KPIs SEMANALES -->
+    <div class="table-card" style="margin-bottom:20px;">
+      <div class="table-header">🎯 KPIs Semanales — Semáforo</div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>KPI</th><th>Meta</th><th>Verde ≥</th><th>Amarillo ≥</th><th>Rojo &lt;</th><th>Actual</th><th>Unidad</th><th>Estado</th></tr></thead>
+          <tbody id="r-kpis-table"><tr><td colspan="8" class="empty">Cargando KPIs...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- EVENTOS KPI -->
+    <div class="metrics-grid">
+      <div class="metric-card">
+        <div class="metric-label">Eventos Cerrados (acum)</div>
+        <div class="metric-value" id="r-eventos-cerrados">—</div>
+        <div class="metric-sub">período seleccionado</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Cotizaciones Generadas</div>
+        <div class="metric-value" id="r-cotizaciones">—</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Tasa de Cierre</div>
+        <div class="metric-value" id="r-tasa-cierre">—</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Visitantes (acum)</div>
+        <div class="metric-value" id="r-visitantes">—</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Ticket Promedio</div>
+        <div class="metric-value" id="r-ticket">—</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="page" id="page-config">
+    <div class="config-section">
+      <div class="config-title">⚙️ Conexión a la API de Sacoa</div>
+      <div class="config-grid">
+        <div class="field"><label>URL base</label><input type="text" id="cfg-url" value="http://localhost:3000/api"></div>
+        <div class="field"><label>Usuario</label><input type="text" id="cfg-user" value="aspeldev"></div>
+        <div class="field"><label>Contraseña</label><input type="password" id="cfg-pass" value="Sacoa2025@"></div>
+        <div class="field"><label>POS ID</label><input type="number" id="cfg-pos" value="1"></div>
+        <div class="field"><label>Empleado ID</label><input type="number" id="cfg-emp" value="1"></div>
+        <div class="field"><label>Computer ID</label><input type="number" id="cfg-comp" value="1"></div>
+      </div>
+      <div style="margin-top:14px"><button class="btn btn-primary" onclick="testConnection()">🔌 Probar conexión</button></div>
+      <div id="msg-config" style="margin-top:12px"></div>
+    </div>
+    <div class="config-section">
+      <div class="config-title">ℹ️ Estado</div>
+      <div style="font-size:12px;color:var(--muted);line-height:2.2">
+        <div>Token activo: <span style="color:var(--text)" id="info-token">No</span></div>
+        <div>Último fetch: <span style="color:var(--text)" id="info-fetch">—</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+var authToken = null; var authTokenJWT = null;
+var chartVD=null, chartVT=null, chartJD=null, chartCT=null;
+var allGameTxs=[], allRoamingTxs=[];
+var gameNames={};
+var CRED={1:'Normal',3:'Cortesía',5:'Tiempo',1003:'Pase libre'};
+
+var hoy=new Date(), hace30=new Date();
+hace30.setDate(hoy.getDate()-30);
+document.getElementById('date-from').value=hace30.toISOString().split('T')[0];
+document.getElementById('date-to').value=hoy.toISOString().split('T')[0];
+
+function g(id){return document.getElementById(id);}
+function cfg(k){var m={url:'cfg-url',user:'cfg-user',pass:'cfg-pass',pos:'cfg-pos',emp:'cfg-emp',comp:'cfg-comp'};return g(m[k]).value.trim();}
+function setConn(ok,txt){g('conn-dot').className=ok?'dot-live':'dot-off';g('conn-text').textContent=txt;}
+function showMsg(id,type,txt){var el=g(id);if(el)el.innerHTML='<div class="msg msg-'+type+'">'+txt+'</div>';}
+
+function showPage(name){
+  document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});
+  document.querySelectorAll('.nav-item').forEach(function(n){n.classList.remove('active');});
+  g('page-'+name).classList.add('active');
+  g('nav-'+name).classList.add('active');
+  var t={ventas:'💰 Ventas',juegos:'🕹️ Juegos',redencion:'🎁 Redención',config:'⚙️ Configuración',reportes:'📊 Reportes KPI'};
+  g('page-title').textContent=t[name];
+  if(name==='reportes') loadSheets();
+}
+
+async function apiPost(ep,body){
+  var r=await fetch(cfg('url')+ep,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  return r.json();
+}
+
+async function doLogin(){
+  try{
+    var d=await apiPost('/login',{user:cfg('user'),password:cfg('pass'),posId:parseInt(cfg('pos')),empId:parseInt(cfg('emp'))});
+    if(d.statusCode===200&&d.body&&d.body.data){
+      var dat=d.body.data;
+      authToken=(dat.apiSession&&dat.apiSession.token)||dat.token;
+      authTokenJWT=dat.token||authToken;
+      if(authToken){g('info-token').textContent='Sí';setConn(true,'Conectado');return true;}
+    }
+    setConn(false,'Error login');return false;
+  }catch(e){setConn(false,'Sin conexión');return false;}
+}
+
+function getRange(){
+  var from=g('date-from').value,to=g('date-to').value;
+  return{from:from,to:to,fromDt:new Date(from),toDt:new Date(to+'T23:59:59')};
+}
+function filterDate(txs,fn){var r=getRange();return txs.filter(function(t){var d=new Date(fn(t));return d>=r.fromDt&&d<=r.toDt;});}
+
+async function loadAll(){
+  var btn=g('btn-load');btn.disabled=true;btn.textContent='⏳ Cargando...';
+  var ok=await doLogin();
+  if(!ok){showMsg('msg-ventas','err','❌ Sin conexión. Revisa ⚙️ Configuración.');btn.disabled=false;btn.textContent='🔄 Consultar';return;}
+  var pos=parseInt(cfg('pos')),emp=parseInt(cfg('emp')),comp=parseInt(cfg('comp'));
+  var com={posId:pos,empId:emp,token:authToken};
+  var rx=getRange();
+  var fromStr=rx.from+' 00:00:00';
+  var toStr=rx.to+' 23:59:59';
+  // Ventas con filtro de fecha real
+  try{
+    var rdS=await apiPost('/dcsReports/sales',{posId:pos,empId:emp,token:authTokenJWT,extEmpId:emp,range:{from:fromStr,to:toStr}});
+    if(rdS.statusCode===200&&rdS.body){
+      var sales=rdS.body;
+      var txs=[];
+      if(sales.byPosition){sales.byPosition.forEach(function(p,i){txs.push({ID:i+1,DateTime:rx.from+'T12:00:00Z',CardNumber:'—',StoreID:p.POSDescription||'—',TransTypeID:1,Amount:p.Amount||0});});}
+      else if(sales.payments){sales.payments.forEach(function(p,i){txs.push({ID:i+1,DateTime:rx.from+'T12:00:00Z',CardNumber:'—',StoreID:p.PaymentName||'—',TransTypeID:1,Amount:p.Total||0});});}
+      allRoamingTxs=txs;
+      renderVentas(txs);
+      showMsg('msg-ventas','ok','✅ Datos de ventas del '+rx.from+' al '+rx.to);
+    }else{showMsg('msg-ventas','err','❌ Sin datos de ventas en ese período');}
+  }catch(e){showMsg('msg-ventas','err','❌ Error ventas: '+e.message);}
+  // Juegos con filtro de fecha real
+  try{
+    var gdR=await apiPost('/dcsReports/gamesActivity',{posId:pos,empId:emp,token:authTokenJWT,extEmpId:emp,range:{from:fromStr,to:toStr}});
+    if(gdR.statusCode===200&&gdR.body&&gdR.body.data&&gdR.body.data.length>0){
+      renderJuegosReporte(gdR.body.data,rx.from,rx.to);
+      showMsg('msg-juegos','ok','✅ '+gdR.body.data.length+' juegos cargados del '+rx.from+' al '+rx.to);
+    }else{showMsg('msg-juegos','err','❌ Sin datos de juegos en ese período');}
+  }catch(e){showMsg('msg-juegos','err','❌ Error juegos: '+e.message);}
+  try{
+    var r3=getRange();
+    var red=await apiPost('/reports/redemption/itemsRedeemed',{token:authToken,empId:emp,computerId:String(comp),from:r3.from,to:r3.to,providerId:1});
+    if(red.statusCode===200)renderRedencion(red.body.payLoad||[]);
+  }catch(e){}
+  g('info-fetch').textContent=new Date().toLocaleString('es-MX');
+  btn.disabled=false;btn.textContent='🔄 Consultar';
+}
+
+function renderVentas(txs){
+  var total=txs.reduce(function(s,t){return s+(t.Amount||0);},0);
+  var avg=txs.length?total/txs.length:0;
+  var byDay={};txs.forEach(function(t){var d=(t.DateTime||'').split('T')[0];byDay[d]=(byDay[d]||0)+(t.Amount||0);});
+  var days=Object.keys(byDay).sort();
+  var peak=Object.entries(byDay).sort(function(a,b){return b[1]-a[1];})[0];
+  g('v-total').textContent='$'+total.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2});
+  g('v-trans').textContent=txs.length.toLocaleString();
+  g('v-avg').textContent='$'+avg.toFixed(2);
+  g('v-peak').textContent=peak?peak[0]:'—';
+  g('v-count').textContent=txs.length+' registros';
+  if(chartVD)chartVD.destroy();
+  chartVD=new Chart(g('chart-ventas-dia'),{type:'bar',data:{labels:days,datasets:[{label:'$',data:days.map(function(d){return +byDay[d].toFixed(2);}),backgroundColor:'#D85A30',borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#888',maxRotation:45,font:{size:10}}},y:{ticks:{color:'#888',callback:function(v){return '$'+v;}},grid:{color:'#2e2e2e'}}}}});
+  var byType={};txs.forEach(function(t){var k='Tipo '+t.TransTypeID;byType[k]=(byType[k]||0)+1;});
+  var types=Object.keys(byType);
+  if(chartVT)chartVT.destroy();
+  chartVT=new Chart(g('chart-ventas-tipo'),{type:'doughnut',data:{labels:types,datasets:[{data:types.map(function(k){return byType[k];}),backgroundColor:['#D85A30','#4ade80','#60a5fa','#facc15','#f87171']}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{color:'#888',font:{size:11},boxWidth:12}}}}});
+  var tb=g('v-table');
+  if(!txs.length){tb.innerHTML='<tr><td colspan="7" class="empty">Sin datos en el período</td></tr>';return;}
+  tb.innerHTML=txs.slice(0,50).map(function(t){var a=t.Amount||0;return'<tr><td>'+(t.ID||'')+'</td><td>'+(t.DateTime||'').replace('T',' ').split('.')[0]+'</td><td>'+(t.CardNumber||'—')+'</td><td>'+(t.StoreID||'—')+'</td><td><span class="badge badge-blue">Tipo '+(t.TransTypeID||'?')+'</span></td><td style="color:'+(a>=0?'#4ade80':'#f87171')+'">$'+a.toFixed(2)+'</td><td><span class="badge '+(a>=0?'badge-green':'badge-red')+'">'+(a>=0?'OK':'Débito')+'</span></td></tr>';}).join('');
+}
+
+function renderJuegosReporte(games,fromDate,toDate){
+  var totalJ=games.reduce(function(s,g){return s+(g.TotalPlays||0);},0);
+  var totalA=games.reduce(function(s,g){return s+(g.Collection||0);},0);
+  var activos=games.length;
+  g('j-total').textContent=totalJ.toLocaleString();
+  g('j-ingresos').textContent='$'+totalA.toFixed(2);
+  g('j-activos').textContent=activos;
+  g('j-avg').textContent=activos?(totalJ/activos).toFixed(1):'0';
+  // Gráfica por grupo
+  var byGroup={};
+  games.forEach(function(gm){var gr=gm.GroupName||'Otro';byGroup[gr]=(byGroup[gr]||0)+(gm.TotalPlays||0);});
+  var groups=Object.keys(byGroup);
+  if(chartJD)chartJD.destroy();
+  chartJD=new Chart(g('chart-juegos-dia'),{type:'bar',data:{labels:groups,datasets:[{label:'Jugadas',data:groups.map(function(gr){return byGroup[gr];}),backgroundColor:'#60a5fa',borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#888'}},y:{ticks:{color:'#888'},grid:{color:'#2e2e2e'}}}}});
+  // Gráfica tipo crédito estimado
+  var byCred={Normal:0,Cortesía:0,Tiempo:0};
+  games.forEach(function(gm){byCred.Normal+=(gm.CreditPlays||0);byCred.Cortesía+=(gm.CourtesyPlays||0);byCred.Tiempo+=(gm.Time||0);});
+  var creds=Object.keys(byCred).filter(function(k){return byCred[k]>0;});
+  if(chartCT)chartCT.destroy();
+  chartCT=new Chart(g('chart-credito-tipo'),{type:'pie',data:{labels:creds,datasets:[{data:creds.map(function(k){return byCred[k];}),backgroundColor:['#D85A30','#4ade80','#60a5fa','#facc15']}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{color:'#888',font:{size:11},boxWidth:12}}}}});
+  // Top más y menos
+  var sorted=games.slice().sort(function(a,b){return (b.TotalPlays||0)-(a.TotalPlays||0);});
+  var maxJ=sorted[0]?sorted[0].TotalPlays||1:1;
+  function renderRankR(arr,tbId){
+    var tb=g(tbId);
+    if(!arr.length){tb.innerHTML='<tr><td colspan="4" class="empty">Sin datos</td></tr>';return;}
+    tb.innerHTML=arr.map(function(gm,i){var rc=i===0?'rank-1':i===1?'rank-2':i===2?'rank-3':'rank-other';
+      return '<tr><td><span class="rank-num '+rc+'">'+(i+1)+'</span></td><td style="max-width:130px;overflow:hidden;text-overflow:ellipsis" title="'+(gm.GameName||'')+'">'+( gm.GameName||'—')+'</td><td>'+(gm.TotalPlays||0).toLocaleString()+'</td><td>$'+(gm.Collection||0).toFixed(2)+'</td></tr>';
+    }).join('');
+  }
+  renderRankR(sorted.slice(0,10),'top-mas');
+  renderRankR(sorted.slice().reverse().slice(0,10),'top-menos');
+  // Tabla detalle
+  var tb2=g('j-table');
+  tb2.innerHTML=games.slice(0,50).map(function(gm){
+    return '<tr><td>'+(gm.GameID||'—')+'</td><td>'+fromDate+' ~ '+toDate+'</td><td>—</td><td>'+(gm.GameName||'—')+'</td><td>'+(gm.GroupName||'—')+'</td><td><span class="badge badge-blue">Crédito</span></td><td>$'+(gm.Collection||0).toFixed(2)+'</td></tr>';
+  }).join('');
+}
+
+function renderJuegos(txs){
+  var totalJ=txs.length;
+  var totalA=txs.reduce(function(s,t){return s+(t.Amt||0);},0);
+  var byGame={};
+  txs.forEach(function(t){var gid=t.GameId||t.GameID||0;var gn=gameNames[gid]||('Juego '+gid);if(!byGame[gn])byGame[gn]={jugadas:0,monto:0};byGame[gn].jugadas++;byGame[gn].monto+=(t.Amt||0);});
+  var act=Object.keys(byGame).length;
+  g('j-total').textContent=totalJ.toLocaleString();
+  g('j-ingresos').textContent='$'+totalA.toFixed(2);
+  g('j-activos').textContent=act;
+  g('j-avg').textContent=act?(totalJ/act).toFixed(1):'0';
+  var byDay={};txs.forEach(function(t){var d=(t.DateTime||'').split('T')[0];byDay[d]=(byDay[d]||0)+1;});
+  var days=Object.keys(byDay).sort();
+  if(chartJD)chartJD.destroy();
+  chartJD=new Chart(g('chart-juegos-dia'),{type:'line',data:{labels:days,datasets:[{label:'Jugadas',data:days.map(function(d){return byDay[d];}),borderColor:'#60a5fa',backgroundColor:'rgba(96,165,250,.1)',tension:.3,fill:true,pointRadius:3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#888',maxRotation:45,font:{size:10}}},y:{ticks:{color:'#888'},grid:{color:'#2e2e2e'}}}}});
+  var byCred={};txs.forEach(function(t){var k=CRED[t.CreditType]||('Tipo '+t.CreditType);byCred[k]=(byCred[k]||0)+1;});
+  var creds=Object.keys(byCred);
+  if(chartCT)chartCT.destroy();
+  chartCT=new Chart(g('chart-credito-tipo'),{type:'pie',data:{labels:creds,datasets:[{data:creds.map(function(k){return byCred[k];}),backgroundColor:['#D85A30','#4ade80','#60a5fa','#facc15','#f87171','#a78bfa']}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{color:'#888',font:{size:11},boxWidth:12}}}}});
+  var sorted=Object.entries(byGame).sort(function(a,b){return b[1].jugadas-a[1].jugadas;});
+  function renderRank(arr,tbId){
+    var tb=g(tbId);
+    if(!arr.length){tb.innerHTML='<tr><td colspan="4" class="empty">Sin datos</td></tr>';return;}
+    tb.innerHTML=arr.map(function(e,i){var rc=i===0?'rank-1':i===1?'rank-2':i===2?'rank-3':'rank-other';return'<tr><td><span class="rank-num '+rc+'">'+(i+1)+'</span></td><td style="max-width:130px;overflow:hidden;text-overflow:ellipsis" title="'+e[0]+'">'+e[0]+'</td><td>'+e[1].jugadas.toLocaleString()+'</td><td>$'+e[1].monto.toFixed(2)+'</td></tr>';}).join('');
+  }
+  renderRank(sorted.slice(0,10),'top-mas');
+  renderRank(sorted.slice().reverse().slice(0,10),'top-menos');
+  var tb2=g('j-table');
+  if(!txs.length){tb2.innerHTML='<tr><td colspan="7" class="empty">Sin datos</td></tr>';return;}
+  tb2.innerHTML=txs.slice(0,50).map(function(t){var gid=t.GameId||t.GameID||0;var gn=gameNames[gid]||('ID:'+gid);var cn=CRED[t.CreditType]||('Tipo '+t.CreditType);return'<tr><td>'+t.ID+'</td><td>'+(t.DateTime||'').replace('T',' ').split('.')[0]+'</td><td>'+(t.Card||'—')+'</td><td>'+gn+'</td><td>'+(t.Description||'—')+'</td><td><span class="badge badge-blue">'+cn+'</span></td><td>$'+(t.Amt||0).toFixed(2)+'</td></tr>';}).join('');
+}
+
+function renderRedencion(items){
+  var tR=items.reduce(function(s,i){return s+(i.CantidadRedimida||0);},0);
+  var tV=items.reduce(function(s,i){return s+(i.CantidadActualPrecio||0);},0);
+  var tS=items.reduce(function(s,i){return s+(i.CantidadActual||0);},0);
+  g('r-total').textContent=tR.toLocaleString();
+  g('r-valor').textContent='$'+tV.toLocaleString('es-MX',{minimumFractionDigits:2});
+  g('r-stock').textContent=tS.toLocaleString();
+  var tb=g('r-table');
+  if(!items.length){tb.innerHTML='<tr><td colspan="6" class="empty">Sin datos</td></tr>';return;}
+  tb.innerHTML=items.map(function(i){return'<tr><td>'+(i.CodigoBarra||'—')+'</td><td>'+(i.Nombre||'—')+'</td><td>'+(i.CantidadRedimida||0)+'</td><td>'+(i.CantidadActual||0)+'</td><td>$'+(i.Precioreal||0).toLocaleString()+'</td><td>'+(i.PrecioCosto||0)+' tickets</td></tr>';}).join('');
+}
+
+var SHEET_ID='1RsLPQerkU_Oe38shlxQeM5H07r410pWKiE7woQ58fd8';
+
+function sheetUrl(sheetName){
+  return 'http://localhost:3000/sheets/'+SHEET_ID+'?sheet='+encodeURIComponent(sheetName)+'&t='+Date.now();
+}
+
+async function fetchSheet(sheetName){
+  try{
+    var resp=await fetch(sheetUrl(sheetName));
+    var text=await resp.text();
+    // Limpiar respuesta de Google Visualization
+    var start=text.indexOf('{');
+    var end=text.lastIndexOf('}');
+    if(start===-1||end===-1)throw new Error('Respuesta inválida');
+    var json=JSON.parse(text.substring(start,end+1));
+    var rows=[];
+    var headers=(json.table.cols||[]).map(function(c){return c.label||c.id||'';});
+    (json.table.rows||[]).forEach(function(r){
+      var obj={};
+      (r.c||[]).forEach(function(cell,i){
+        if(!headers[i])return;
+        if(!cell){obj[headers[i]]=null;return;}
+        // Convertir Date(año,mes,dia) a string legible
+        if(typeof cell.v==='string'&&cell.v.indexOf('Date(')===0){
+          var parts=cell.v.replace('Date(','').replace(')','').split(',');
+          var y=parseInt(parts[0]),m=parseInt(parts[1])+1,d=parseInt(parts[2]);
+          obj[headers[i]]=y+'-'+(m<10?'0':'')+m+'-'+(d<10?'0':'')+d;
+        } else {
+          obj[headers[i]]=cell.v;
+        }
+      });
+      rows.push(obj);
+    });
+    return rows;
+  }catch(e){console.error('Sheet error '+sheetName+':',e.message);return [];}
+}
+
+async function loadSheets(){
+  showMsg('msg-reportes','info','🔄 Cargando datos de Google Sheets...');
+  try{
+    var diario=await fetchSheet('Diario');
+    var semanal=await fetchSheet('Semanal');
+    var kpisData=await fetchSheet('KPIs');
+    
+    if(!diario.length&&!semanal.length){
+      showMsg('msg-reportes','err','❌ No se pudieron cargar los datos del Sheet. Verifica que sea público.');
+      return;
+    }
+    
+    // Último registro diario
+    var centros=['Taquilla','E-com','Eventos','Juegos','Atracciones','ToGo'];
+    
+    // Filtrar solo filas con fecha válida (formato 2026-05-19), excluir totales
+    var filasValidas=diario.filter(function(r){
+      var f=r['Fecha'];
+      return f&&typeof f==='string'&&f.length===10&&f.charAt(4)==='-';
+    });
+    
+    // Último día real
+    var last=filasValidas[filasValidas.length-1]||{};
+    var totalDia=centros.reduce(function(s,c){return s+(last[c]||0);},0);
+    var metaDia=last['Meta_Dia']||0;
+    var cumpl=metaDia>0?(totalDia/metaDia*100):0;
+    
+    g('r-total-dia').textContent='$'+totalDia.toLocaleString('es-MX');
+    g('r-meta-dia').textContent='$'+(metaDia||0).toLocaleString('es-MX');
+    g('r-cumpl').textContent=cumpl.toFixed(1)+'%';
+    g('r-cumpl').style.color=cumpl>=100?'#4ade80':cumpl>=80?'#facc15':'#f87171';
+    
+    // Cards por centro — último día
+    var grid=g('centros-grid');
+    grid.innerHTML=centros.map(function(c){
+      var v=last[c]||0;
+      return '<div class="metric-card"><div class="metric-label">'+c+'</div><div class="metric-value" style="font-size:18px">$'+v.toLocaleString('es-MX')+'</div></div>';
+    }).join('');
+    
+    // Acumulado por centro — suma real de todas las filas válidas
+    var acum={};
+    centros.forEach(function(c){acum[c]=0;});
+    var totalVisitantes=0,totalEventos=0,totalCotiz=0,sumaMetas=0;
+    filasValidas.forEach(function(r){
+      centros.forEach(function(c){acum[c]+=(r[c]||0);});
+      totalVisitantes+=(r['Visitantes']||0);
+      totalEventos+=(r['Eventos_Cerrados']||0);
+      totalCotiz+=(r['Cotizaciones']||0);
+      sumaMetas+=(r['Meta_Dia']||0);
+    });
+    var totalAcum=centros.reduce(function(s,c){return s+acum[c];},0);
+    
+    // Año anterior de semanal
+    var lastSem=semanal[semanal.length-1]||{};
+    
+    var tbody=g('r-centros-table');
+    tbody.innerHTML=centros.map(function(c){
+      var real=acum[c];
+      // Meta acumulada proporcional basada en suma de metas diarias
+      var pctDel=totalAcum>0?(real/totalAcum):0;
+      var metaAcum=Math.round(sumaMetas*pctDel);
+      var pct=metaAcum>0?(real/metaAcum*100):0;
+      var color=pct>=100?'#4ade80':pct>=80?'#facc15':'#f87171';
+      var sem=pct>=100?'🟢':pct>=80?'🟡':'🔴';
+      return '<tr><td><strong>'+c+'</strong></td><td>$'+real.toLocaleString('es-MX')+'</td><td>$'+metaAcum.toLocaleString('es-MX')+'</td><td style="color:'+color+'">'+pct.toFixed(1)+'%</td><td>—</td><td>—</td><td style="font-size:18px">'+sem+'</td></tr>';
+    }).join('');
+    
+    // KPIs semáforo
+    var kpiTb=g('r-kpis-table');
+    if(kpisData.length&&lastSem){
+      var kpiActual={
+        'NPS': lastSem['NPS'],
+        'Uptime_Juegos': lastSem['Uptime_Juegos'],
+        'Tasa_Cierre': lastSem['Tasa_Cierre_Eventos'],
+        'Margen_Contribucion': lastSem['Margen_Contribucion'],
+        'Costo_Alimentos': lastSem['Costo_Alimentos'],
+        'Costo_Laboral': lastSem['Costo_Laboral'],
+        'Food_Waste': lastSem['Food_Waste'],
+        'Coin_Drop': lastSem['Coin_Drop']
+      };
+      kpiTb.innerHTML=kpisData.map(function(k){
+        var kpi=k['KPI']||k[Object.keys(k)[0]];
+        var meta=k['Meta']||k[Object.keys(k)[1]];
+        var verde=k['Verde_≥']||k[Object.keys(k)[2]];
+        var amarillo=k['Amarillo_≥']||k[Object.keys(k)[3]];
+        var rojo=k['Rojo_<']||k[Object.keys(k)[4]];
+        var unidad=k['Unidad']||k[Object.keys(k)[5]]||'';
+        var actual=kpiActual[kpi];
+        var sem='⚪',color='#888';
+        if(actual!=null){
+          if(actual>=verde){sem='🟢';color='#4ade80';}
+          else if(actual>=amarillo){sem='🟡';color='#facc15';}
+          else{sem='🔴';color='#f87171';}
+        }
+        var actStr=actual!=null?actual+' '+unidad:'—';
+        return '<tr><td><strong>'+(kpi||'—')+'</strong></td><td>'+(meta||'—')+'</td><td style="color:#4ade80">'+(verde||'—')+'</td><td style="color:#facc15">'+(amarillo||'—')+'</td><td style="color:#f87171">'+(rojo||'—')+'</td><td style="color:'+color+';font-weight:700">'+actStr+'</td><td>'+(unidad||'')+'</td><td style="font-size:18px">'+sem+'</td></tr>';
+      }).join('');
+    }
+    
+    // Métricas de eventos
+    var tasaCierre=totalCotiz>0?(totalEventos/totalCotiz*100):0;
+    var ticketProm=totalVisitantes>0?(totalAcum/totalVisitantes):0;
+    g('r-eventos-cerrados').textContent=totalEventos.toLocaleString();
+    g('r-cotizaciones').textContent=totalCotiz.toLocaleString();
+    g('r-tasa-cierre').textContent=tasaCierre.toFixed(1)+'%';
+    g('r-visitantes').textContent=totalVisitantes.toLocaleString();
+    g('r-ticket').textContent='$'+Math.round(ticketProm).toLocaleString('es-MX');
+    
+    g('sheets-last-update').textContent='Actualizado: '+new Date().toLocaleString('es-MX');
+    showMsg('msg-reportes','ok','✅ Datos cargados desde Google Sheets.');
+  }catch(e){
+    showMsg('msg-reportes','err','❌ Error: '+e.message);
+  }
+}
+
+function loadDemo(){
+  setConn(true,'Demo activo');
+  var base=new Date();base.setDate(base.getDate()-14);
+  var dg={10:'Terminator Salvation',11:'Fast & Furious',12:'Guitar Hero',13:'Air Hockey',14:'Claw Machine',15:'Basketball',16:'Whack-a-Mole',17:'Dance Dance Revolution',18:'Pump It Up',20:'Skee Ball'};
+  gameNames=dg;
+  var gids=Object.keys(dg).map(Number);
+  var wts=[80,60,50,40,35,30,20,15,10,5];
+  var ctypes=[1,3,5,1003];
+  allGameTxs=[];
+  for(var i=0;i<300;i++){
+    var d=new Date(base.getTime());d.setDate(d.getDate()+Math.floor(Math.random()*14));d.setHours(10+Math.floor(Math.random()*10));
+    var tot=wts.reduce(function(a,b){return a+b;},0),r=Math.random()*tot,pick=0;
+    for(var w=0;w<wts.length;w++){r-=wts[w];if(r<=0){pick=w;break;}}
+    allGameTxs.push({ID:1000+i,DateTime:d.toISOString(),Card:300000+Math.floor(Math.random()*999),Amt:+(2+Math.random()*8).toFixed(2),GameId:gids[pick],Description:['Jugada','Tiempo','Cortesía','Pase libre'][i%4],CreditType:ctypes[i%4]});
+  }
+  allRoamingTxs=[];
+  for(var j=0;j<150;j++){
+    var d2=new Date(base.getTime());d2.setDate(d2.getDate()+Math.floor(Math.random()*14));d2.setHours(10+Math.floor(Math.random()*10));
+    allRoamingTxs.push({ID:2000+j,DateTime:d2.toISOString(),CardNumber:300000+Math.floor(Math.random()*999),StoreID:['PA','PB','PC'][j%3],TransTypeID:Math.ceil(Math.random()*3),CounterTypeID:1,Amount:+(5+Math.random()*95).toFixed(2)});
+  }
+  renderVentas(allRoamingTxs);
+  renderJuegos(allGameTxs);
+  renderRedencion([
+    {CodigoBarra:'S001',Nombre:'Peluche grande',CantidadRedimida:12,CantidadActual:8,Precioreal:250,PrecioCosto:500,CantidadActualPrecio:2000},
+    {CodigoBarra:'S002',Nombre:'Figura coleccionable',CantidadRedimida:5,CantidadActual:20,Precioreal:150,PrecioCosto:300,CantidadActualPrecio:3000},
+    {CodigoBarra:'S003',Nombre:'Dulces surtidos',CantidadRedimida:30,CantidadActual:50,Precioreal:20,PrecioCosto:50,CantidadActualPrecio:1000}
+  ]);
+  showMsg('msg-ventas','info','📊 Datos de demostración. Usa ⚙️ Configuración y 🔄 Consultar para ver datos reales.');
+  showMsg('msg-juegos','info','📊 Datos de demostración. Usa ⚙️ Configuración y 🔄 Consultar para ver datos reales.');
+}
+
+async function testConnection(){
+  showMsg('msg-config','info','🔌 Probando conexión...');
+  var ok=await doLogin();
+  if(ok)showMsg('msg-config','ok','✅ Conexión exitosa con la API de Sacoa.');
+  else showMsg('msg-config','err','❌ Sin conexión. Verifica que el servidor esté corriendo y los datos sean correctos.');
+}
+
+loadDemo();
+</script>
+</body>
+</html>
