@@ -54,6 +54,7 @@
   .badge { display:inline-block; padding:2px 8px; border-radius:999px; font-size:10px; font-weight:600; }
   .badge-green { background:rgba(74,222,128,.15); color:var(--green); }
   .badge-red { background:rgba(248,113,113,.15); color:var(--red); }
+  .badge-yellow { background:rgba(250,204,21,.15); color:var(--yellow); }
   .badge-blue { background:rgba(96,165,250,.15); color:var(--blue); }
   .rank-num { width:28px; height:28px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; }
   .rank-1{background:rgba(250,204,21,.2);color:var(--yellow);} .rank-2{background:rgba(156,163,175,.2);color:#9ca3af;} .rank-3{background:rgba(180,83,9,.2);color:#f97316;} .rank-other{background:var(--bg3);color:var(--muted);}
@@ -69,6 +70,14 @@
   .field input { width:100%; }
   .top-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:20px; }
   .empty { text-align:center; padding:40px; color:var(--muted); font-size:13px; }
+  .semaforo { display:inline-block; width:14px; height:14px; border-radius:50%; }
+  .sem-verde { background:var(--green); }
+  .sem-amarillo { background:var(--yellow); }
+  .sem-rojo { background:var(--red); }
+  .sem-gris { background:var(--muted); }
+  .kpi-section-title { font-size:13px; font-weight:700; color:var(--primary); margin:20px 0 10px; padding-bottom:6px; border-bottom:1px solid var(--border); }
+  .acum-highlight { background:rgba(216,90,48,.08); border:1px solid rgba(216,90,48,.3); border-radius:10px; padding:16px; margin-bottom:20px; }
+  .acum-highlight .metric-card::before { background: var(--primary); }
 </style>
 </head>
 <body>
@@ -98,6 +107,7 @@
     </div>
   </div>
 
+  <!-- VENTAS -->
   <div class="page active" id="page-ventas">
     <div id="msg-ventas"></div>
     <div class="metrics-grid">
@@ -116,16 +126,17 @@
     </div>
   </div>
 
+  <!-- JUEGOS -->
   <div class="page" id="page-juegos">
     <div id="msg-juegos"></div>
     <div class="metrics-grid">
-      <div class="metric-card"><div class="metric-label">Total jugadas</div><div class="metric-value" id="j-total">—</div><div class="metric-sub">en el período</div></div>
-      <div class="metric-card"><div class="metric-label">Ingresos juegos</div><div class="metric-value" id="j-ingresos">—</div><div class="metric-sub">monto total</div></div>
-      <div class="metric-card"><div class="metric-label">Juegos activos</div><div class="metric-value" id="j-activos">—</div><div class="metric-sub">máquinas</div></div>
-      <div class="metric-card"><div class="metric-label">Promedio jugadas</div><div class="metric-value" id="j-avg">—</div><div class="metric-sub">por máquina</div></div>
+      <div class="metric-card"><div class="metric-label">Total jugadas</div><div class="metric-value" id="j-total">—</div></div>
+      <div class="metric-card"><div class="metric-label">Ingresos juegos</div><div class="metric-value" id="j-ingresos">—</div></div>
+      <div class="metric-card"><div class="metric-label">Juegos activos</div><div class="metric-value" id="j-activos">—</div></div>
+      <div class="metric-card"><div class="metric-label">Promedio jugadas</div><div class="metric-value" id="j-avg">—</div></div>
     </div>
     <div class="charts-grid">
-      <div class="chart-card"><div class="chart-title">Jugadas por día</div><div class="chart-wrap"><canvas id="chart-juegos-dia"></canvas></div></div>
+      <div class="chart-card"><div class="chart-title">Jugadas por grupo</div><div class="chart-wrap"><canvas id="chart-juegos-dia"></canvas></div></div>
       <div class="chart-card"><div class="chart-title">Tipo de crédito</div><div class="chart-wrap"><canvas id="chart-credito-tipo"></canvas></div></div>
     </div>
     <div class="top-grid">
@@ -138,12 +149,9 @@
         <div class="table-wrap"><table><thead><tr><th>#</th><th>Juego</th><th>Jugadas</th><th>Ingresos</th></tr></thead><tbody id="top-menos"><tr><td colspan="4" class="empty">Sin datos</td></tr></tbody></table></div>
       </div>
     </div>
-    <div class="table-card">
-      <div class="table-header">📋 Detalle de transacciones</div>
-      <div class="table-wrap"><table><thead><tr><th>ID</th><th>Fecha</th><th>Tarjeta</th><th>Juego</th><th>Descripción</th><th>Tipo crédito</th><th>Monto</th></tr></thead><tbody id="j-table"><tr><td colspan="7" class="empty">Haz clic en 📊 Demo para ver datos de ejemplo</td></tr></tbody></table></div>
-    </div>
   </div>
 
+  <!-- REDENCION -->
   <div class="page" id="page-redencion">
     <div id="msg-red"></div>
     <div class="metrics-grid">
@@ -153,96 +161,16 @@
     </div>
     <div class="table-card">
       <div class="table-header">Inventario de redención</div>
-      <div class="table-wrap"><table><thead><tr><th>Código</th><th>Nombre</th><th>Redimidos</th><th>Stock</th><th>Precio</th><th>Costo tickets</th></tr></thead><tbody id="r-table"><tr><td colspan="6" class="empty">Haz clic en 📊 Demo para ver datos de ejemplo</td></tr></tbody></table></div>
+      <div class="table-wrap"><table><thead><tr><th>Código</th><th>Nombre</th><th>Redimidos</th><th>Stock</th><th>Precio</th><th>Costo tickets</th></tr></thead><tbody id="r-table"><tr><td colspan="6" class="empty">Sin datos</td></tr></tbody></table></div>
     </div>
   </div>
 
-  <!-- REPORTES KPI PAGE -->
-  <div class="page" id="page-reportes">
-    <div id="msg-reportes"></div>
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px;">
-      <div>
-        <div style="font-size:18px;font-weight:700;color:var(--text)">Dashboard KPI — Incredible Pizza</div>
-        <div style="font-size:12px;color:var(--muted);margin-top:2px">Datos de Google Sheets · <span id="sheets-last-update">Cargando...</span></div>
-      </div>
-      <button class="btn btn-primary" onclick="loadSheets()">🔄 Actualizar desde Sheets</button>
-    </div>
-
-    <!-- VENTAS DEL DÍA -->
-    <div class="table-card" style="margin-bottom:20px;">
-      <div class="table-header">💰 Ventas por Centro — Último registro</div>
-      <div style="padding:16px;">
-        <div id="centros-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:16px;"></div>
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
-          <div class="metric-card" style="border-color:var(--primary)">
-            <div class="metric-label">Total Día</div>
-            <div class="metric-value" id="r-total-dia" style="color:var(--primary)">—</div>
-          </div>
-          <div class="metric-card">
-            <div class="metric-label">Meta Día</div>
-            <div class="metric-value" id="r-meta-dia">—</div>
-          </div>
-          <div class="metric-card">
-            <div class="metric-label">% Cumplimiento</div>
-            <div class="metric-value" id="r-cumpl" style="font-size:20px">—</div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- TABLA ACUMULADO POR CENTRO -->
-    <div class="table-card" style="margin-bottom:20px;">
-      <div class="table-header">📈 Acumulado por Centro</div>
-      <div class="table-wrap">
-        <table>
-          <thead><tr><th>Centro</th><th>Real Acum ($)</th><th>Meta Acum ($)</th><th>% Cumpl</th><th>Año Anterior</th><th>% vs AA</th><th>Semáforo</th></tr></thead>
-          <tbody id="r-centros-table"><tr><td colspan="7" class="empty">Cargando datos de Sheets...</td></tr></tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- KPIs SEMANALES -->
-    <div class="table-card" style="margin-bottom:20px;">
-      <div class="table-header">🎯 KPIs Semanales — Semáforo</div>
-      <div class="table-wrap">
-        <table>
-          <thead><tr><th>KPI</th><th>Meta</th><th>Verde ≥</th><th>Amarillo ≥</th><th>Rojo &lt;</th><th>Actual</th><th>Unidad</th><th>Estado</th></tr></thead>
-          <tbody id="r-kpis-table"><tr><td colspan="8" class="empty">Cargando KPIs...</td></tr></tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- EVENTOS KPI -->
-    <div class="metrics-grid">
-      <div class="metric-card">
-        <div class="metric-label">Eventos Cerrados (acum)</div>
-        <div class="metric-value" id="r-eventos-cerrados">—</div>
-        <div class="metric-sub">período seleccionado</div>
-      </div>
-      <div class="metric-card">
-        <div class="metric-label">Cotizaciones Generadas</div>
-        <div class="metric-value" id="r-cotizaciones">—</div>
-      </div>
-      <div class="metric-card">
-        <div class="metric-label">Tasa de Cierre</div>
-        <div class="metric-value" id="r-tasa-cierre">—</div>
-      </div>
-      <div class="metric-card">
-        <div class="metric-label">Visitantes (acum)</div>
-        <div class="metric-value" id="r-visitantes">—</div>
-      </div>
-      <div class="metric-card">
-        <div class="metric-label">Ticket Promedio</div>
-        <div class="metric-value" id="r-ticket">—</div>
-      </div>
-    </div>
-  </div>
-
+  <!-- CONFIG -->
   <div class="page" id="page-config">
     <div class="config-section">
       <div class="config-title">⚙️ Conexión a la API de Sacoa</div>
       <div class="config-grid">
-        <div class="field"><label>URL base</label><input type="text" id="cfg-url" value="http://localhost:3000/api"></div>
+        <div class="field"><label>URL base</label><input type="text" id="cfg-url" value="/api"></div>
         <div class="field"><label>Usuario</label><input type="text" id="cfg-user" value="aspeldev"></div>
         <div class="field"><label>Contraseña</label><input type="password" id="cfg-pass" value="Sacoa2025@"></div>
         <div class="field"><label>POS ID</label><input type="number" id="cfg-pos" value="1"></div>
@@ -260,14 +188,83 @@
       </div>
     </div>
   </div>
+
+  <!-- REPORTES KPI -->
+  <div class="page" id="page-reportes">
+    <div id="msg-reportes"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <div>
+        <h2 style="font-size:16px;font-weight:700;">Dashboard KPI — Incredible Pizza</h2>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px">Datos de Google Sheets · <span id="sheets-last-update">Cargando...</span></div>
+      </div>
+      <button class="btn btn-primary" onclick="loadSheets()">🔄 Actualizar desde Sheets</button>
+    </div>
+
+    <!-- Ventas HOY -->
+    <div class="kpi-section-title">💰 Ventas por Centro — Último registro</div>
+    <div class="metrics-grid" style="margin-bottom:12px;">
+      <div class="metric-card"><div class="metric-label">Taquilla</div><div class="metric-value" id="kpi-taquilla">—</div></div>
+      <div class="metric-card"><div class="metric-label">E-com</div><div class="metric-value" id="kpi-ecom">—</div></div>
+      <div class="metric-card"><div class="metric-label">Eventos</div><div class="metric-value" id="kpi-eventos">—</div></div>
+      <div class="metric-card"><div class="metric-label">Juegos</div><div class="metric-value" id="kpi-juegos">—</div></div>
+      <div class="metric-card"><div class="metric-label">Atracciones</div><div class="metric-value" id="kpi-atracciones">—</div></div>
+      <div class="metric-card"><div class="metric-label">ToGo</div><div class="metric-value" id="kpi-togo">—</div></div>
+    </div>
+    <div class="metrics-grid" style="margin-bottom:20px;">
+      <div class="metric-card" style="border-color:var(--primary)"><div class="metric-label">Total Día</div><div class="metric-value" id="kpi-total-dia" style="color:var(--primary)">—</div></div>
+      <div class="metric-card"><div class="metric-label">Meta Día</div><div class="metric-value" id="kpi-meta-dia">—</div></div>
+      <div class="metric-card"><div class="metric-label">% Cumplimiento</div><div class="metric-value" id="kpi-cumpl-dia">—</div></div>
+    </div>
+
+    <!-- Acumulado del Mes -->
+    <div class="kpi-section-title">📈 Acumulado por Centro — Mayo 2026</div>
+    <div class="table-card" style="margin-bottom:20px;">
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Centro</th><th>Real Acum ($)</th><th>Meta Acum ($)</th><th>% Cumpl</th><th>Año Anterior</th><th>% vs AA</th><th>Semáforo</th></tr></thead>
+          <tbody id="r-centros-table"><tr><td colspan="7" class="empty">Cargando datos de Sheets...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Total Mes -->
+    <div class="metrics-grid" style="margin-bottom:20px;">
+      <div class="metric-card" style="border-color:var(--primary)"><div class="metric-label">Total Mes</div><div class="metric-value" id="kpi-total-mes" style="color:var(--primary)">—</div></div>
+      <div class="metric-card"><div class="metric-label">Meta Mes</div><div class="metric-value" id="kpi-meta-mes">—</div></div>
+      <div class="metric-card"><div class="metric-label">% Cumpl Mes</div><div class="metric-value" id="kpi-cumpl-mes">—</div></div>
+    </div>
+
+    <!-- KPIs Semanales -->
+    <div class="kpi-section-title">🎯 KPIs Semanales — Semáforo</div>
+    <div class="table-card" style="margin-bottom:20px;">
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>KPI</th><th>Meta</th><th>Verde ≥</th><th>Amarillo ≥</th><th>Rojo &lt;</th><th>Actual</th><th>Unidad</th><th>Estado</th></tr></thead>
+          <tbody id="kpi-semanal-table"><tr><td colspan="8" class="empty">Cargando KPIs...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Métricas adicionales -->
+    <div class="kpi-section-title">📊 Indicadores Adicionales (Acumulado)</div>
+    <div class="metrics-grid">
+      <div class="metric-card"><div class="metric-label">Eventos Cerrados (Acum)</div><div class="metric-value" id="kpi-eventos-cerrados">—</div><div class="metric-sub">período seleccionado</div></div>
+      <div class="metric-card"><div class="metric-label">Cotizaciones Generadas</div><div class="metric-value" id="kpi-cotizaciones">—</div></div>
+      <div class="metric-card"><div class="metric-label">Tasa de Cierre</div><div class="metric-value" id="kpi-tasa-cierre">—</div></div>
+      <div class="metric-card"><div class="metric-label">Visitantes (Acum)</div><div class="metric-value" id="kpi-visitantes">—</div></div>
+      <div class="metric-card"><div class="metric-label">Ticket Promedio</div><div class="metric-value" id="kpi-ticket-prom">—</div></div>
+    </div>
+  </div>
 </div>
 
 <script>
-var authToken = null; var authTokenJWT = null;
+var authToken=null, authTokenJWT=null;
 var chartVD=null, chartVT=null, chartJD=null, chartCT=null;
 var allGameTxs=[], allRoamingTxs=[];
 var gameNames={};
 var CRED={1:'Normal',3:'Cortesía',5:'Tiempo',1003:'Pase libre'};
+var SHEET_ID='1RsLPQerkU_Oe38shlxQeM5H07r410pWKiE7woQ58fd8';
+var META_MES=8500000;
 
 var hoy=new Date(), hace30=new Date();
 hace30.setDate(hoy.getDate()-30);
@@ -278,6 +275,8 @@ function g(id){return document.getElementById(id);}
 function cfg(k){var m={url:'cfg-url',user:'cfg-user',pass:'cfg-pass',pos:'cfg-pos',emp:'cfg-emp',comp:'cfg-comp'};return g(m[k]).value.trim();}
 function setConn(ok,txt){g('conn-dot').className=ok?'dot-live':'dot-off';g('conn-text').textContent=txt;}
 function showMsg(id,type,txt){var el=g(id);if(el)el.innerHTML='<div class="msg msg-'+type+'">'+txt+'</div>';}
+function fmt(n){return '$'+Math.round(n).toLocaleString('es-MX');}
+function pct(a,b){return b>0?(a/b*100).toFixed(1)+'%':'—';}
 
 function showPage(name){
   document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});
@@ -311,31 +310,24 @@ function getRange(){
   var from=g('date-from').value,to=g('date-to').value;
   return{from:from,to:to,fromDt:new Date(from),toDt:new Date(to+'T23:59:59')};
 }
-function filterDate(txs,fn){var r=getRange();return txs.filter(function(t){var d=new Date(fn(t));return d>=r.fromDt&&d<=r.toDt;});}
 
 async function loadAll(){
   var btn=g('btn-load');btn.disabled=true;btn.textContent='⏳ Cargando...';
   var ok=await doLogin();
   if(!ok){showMsg('msg-ventas','err','❌ Sin conexión. Revisa ⚙️ Configuración.');btn.disabled=false;btn.textContent='🔄 Consultar';return;}
   var pos=parseInt(cfg('pos')),emp=parseInt(cfg('emp')),comp=parseInt(cfg('comp'));
-  var com={posId:pos,empId:emp,token:authToken};
   var rx=getRange();
-  var fromStr=rx.from+' 00:00:00';
-  var toStr=rx.to+' 23:59:59';
-  // Ventas con filtro de fecha real
+  var fromStr=rx.from+' 00:00:00', toStr=rx.to+' 23:59:59';
   try{
     var rdS=await apiPost('/dcsReports/sales',{posId:pos,empId:emp,token:authTokenJWT,extEmpId:emp,range:{from:fromStr,to:toStr}});
     if(rdS.statusCode===200&&rdS.body){
-      var sales=rdS.body;
-      var txs=[];
+      var sales=rdS.body, txs=[];
       if(sales.byPosition){sales.byPosition.forEach(function(p,i){txs.push({ID:i+1,DateTime:rx.from+'T12:00:00Z',CardNumber:'—',StoreID:p.POSDescription||'—',TransTypeID:1,Amount:p.Amount||0});});}
       else if(sales.payments){sales.payments.forEach(function(p,i){txs.push({ID:i+1,DateTime:rx.from+'T12:00:00Z',CardNumber:'—',StoreID:p.PaymentName||'—',TransTypeID:1,Amount:p.Total||0});});}
-      allRoamingTxs=txs;
-      renderVentas(txs);
+      allRoamingTxs=txs; renderVentas(txs);
       showMsg('msg-ventas','ok','✅ Datos de ventas del '+rx.from+' al '+rx.to);
     }else{showMsg('msg-ventas','err','❌ Sin datos de ventas en ese período');}
   }catch(e){showMsg('msg-ventas','err','❌ Error ventas: '+e.message);}
-  // Juegos con filtro de fecha real
   try{
     var gdR=await apiPost('/dcsReports/gamesActivity',{posId:pos,empId:emp,token:authTokenJWT,extEmpId:emp,range:{from:fromStr,to:toStr}});
     if(gdR.statusCode===200&&gdR.body&&gdR.body.data&&gdR.body.data.length>0){
@@ -344,14 +336,208 @@ async function loadAll(){
     }else{showMsg('msg-juegos','err','❌ Sin datos de juegos en ese período');}
   }catch(e){showMsg('msg-juegos','err','❌ Error juegos: '+e.message);}
   try{
-    var r3=getRange();
-    var red=await apiPost('/reports/redemption/itemsRedeemed',{token:authToken,empId:emp,computerId:String(comp),from:r3.from,to:r3.to,providerId:1});
+    var red=await apiPost('/reports/redemption/itemsRedeemed',{token:authToken,empId:emp,computerId:String(comp),from:rx.from,to:rx.to,providerId:1});
     if(red.statusCode===200)renderRedencion(red.body.payLoad||[]);
   }catch(e){}
   g('info-fetch').textContent=new Date().toLocaleString('es-MX');
-  btn.disabled=false;btn.textContent='🔄 Consultar';
+  btn.disabled=false; btn.textContent='🔄 Consultar';
 }
 
+// ============ GOOGLE SHEETS ============
+function sheetUrl(sheetName){
+  return '/sheets/'+SHEET_ID+'?sheet='+encodeURIComponent(sheetName)+'&t='+Date.now();
+}
+
+async function fetchSheet(sheetName){
+  try{
+    var resp=await fetch(sheetUrl(sheetName));
+    var text=await resp.text();
+    var s=text.indexOf('{'), e=text.lastIndexOf('}');
+    if(s<0||e<0)return [];
+    var json=JSON.parse(text.substring(s,e+1));
+    if(!json.table||!json.table.rows)return [];
+    var cols=json.table.cols.map(function(c){return c.label;});
+    var rows=[];
+    json.table.rows.forEach(function(row){
+      if(!row.c||!row.c[0]||!row.c[0].v)return; // saltar filas vacías
+      var v0=String(row.c[0].v||'');
+      // Saltar fila de TOTAL o encabezados
+      if(v0.toUpperCase().indexOf('TOTAL')>=0||v0.toUpperCase().indexOf('FECHA')>=0)return;
+      var obj={};
+      cols.forEach(function(col,i){
+        var cell=row.c&&row.c[i];
+        var val=cell?cell.v:null;
+        // Convertir fechas de formato Date(yyyy,m,d)
+        if(val&&typeof val==='string'&&val.indexOf('Date(')===0){
+          var parts=val.replace('Date(','').replace(')','').split(',');
+          var yr=parseInt(parts[0]),mo=parseInt(parts[1]),dy=parseInt(parts[2]);
+          val=(yr)+'-'+(mo+1<10?'0':'')+(mo+1)+'-'+(dy<10?'0':'')+dy;
+        }
+        obj[col]=val!==null?val:0;
+      });
+      rows.push(obj);
+    });
+    return rows;
+  }catch(e){console.error('Sheet error '+sheetName+':',e.message);return [];}
+}
+
+async function loadSheets(){
+  showMsg('msg-reportes','info','🔄 Cargando datos de Google Sheets...');
+  try{
+    var diario=await fetchSheet('Diario');
+    var semanal=await fetchSheet('Semanal');
+    var kpisData=await fetchSheet('KPIs');
+
+    if(!diario||diario.length===0){
+      showMsg('msg-reportes','err','❌ No se pudieron cargar los datos del Sheet. Verifica que sea público.');
+      return;
+    }
+
+    // Filtrar solo filas con fecha válida y al menos un valor >0
+    var diasReales=diario.filter(function(r){
+      var fecha=r['Fecha']||r['fecha']||'';
+      return fecha&&fecha.match&&fecha.match(/\d{4}-\d{2}-\d{2}/);
+    });
+
+    // Último día con datos (buscar el último que tenga Total > 0)
+    var ultimoDia=null;
+    for(var i=diasReales.length-1;i>=0;i--){
+      var r=diasReales[i];
+      var tot=(parseFloat(r['Taquilla']||0)+parseFloat(r['E-com']||r['Ecom']||0)+parseFloat(r['Eventos']||0)+parseFloat(r['Juegos']||0)+parseFloat(r['Atracciones']||0)+parseFloat(r['ToGo']||0));
+      if(tot>0){ultimoDia=r;break;}
+    }
+    if(!ultimoDia&&diasReales.length>0)ultimoDia=diasReales[diasReales.length-1];
+
+    // Ventas HOY
+    var taq=parseFloat(ultimoDia&&ultimoDia['Taquilla']||0);
+    var eco=parseFloat(ultimoDia&&(ultimoDia['E-com']||ultimoDia['Ecom']||0)||0);
+    var eve=parseFloat(ultimoDia&&ultimoDia['Eventos']||0);
+    var jue=parseFloat(ultimoDia&&ultimoDia['Juegos']||0);
+    var atr=parseFloat(ultimoDia&&ultimoDia['Atracciones']||0);
+    var tgo=parseFloat(ultimoDia&&ultimoDia['ToGo']||0);
+    var metaDia=parseFloat(ultimoDia&&ultimoDia['Meta_Dia']||350000);
+    var totalDia=taq+eco+eve+jue+atr+tgo;
+
+    g('kpi-taquilla').textContent=fmt(taq);
+    g('kpi-ecom').textContent=fmt(eco);
+    g('kpi-eventos').textContent=fmt(eve);
+    g('kpi-juegos').textContent=fmt(jue);
+    g('kpi-atracciones').textContent=fmt(atr);
+    g('kpi-togo').textContent=fmt(tgo);
+    g('kpi-total-dia').textContent=fmt(totalDia);
+    g('kpi-meta-dia').textContent=fmt(metaDia);
+    var cumplDia=metaDia>0?(totalDia/metaDia*100).toFixed(1)+'%':'—';
+    g('kpi-cumpl-dia').textContent=cumplDia;
+    g('kpi-cumpl-dia').style.color=metaDia>0&&totalDia>=metaDia?'var(--green)':totalDia>=metaDia*0.8?'var(--yellow)':'var(--red)';
+
+    // Acumulado — sumar solo días reales (no TOTAL)
+    var centros=['Taquilla','E-com','Eventos','Juegos','Atracciones','ToGo'];
+    var llaves=['Taquilla','E-com','Eventos','Juegos','Atracciones','ToGo'];
+    var acum={Taquilla:0,'E-com':0,Eventos:0,Juegos:0,Atracciones:0,ToGo:0};
+    var visitantesAcum=0, eventosCerradosAcum=0, cotizacionesAcum=0;
+
+    diasReales.forEach(function(r){
+      acum['Taquilla']+=parseFloat(r['Taquilla']||0);
+      acum['E-com']+=parseFloat(r['E-com']||r['Ecom']||0);
+      acum['Eventos']+=parseFloat(r['Eventos']||0);
+      acum['Juegos']+=parseFloat(r['Juegos']||0);
+      acum['Atracciones']+=parseFloat(r['Atracciones']||0);
+      acum['ToGo']+=parseFloat(r['ToGo']||0);
+      visitantesAcum+=parseFloat(r['Visitantes']||0);
+      eventosCerradosAcum+=parseFloat(r['Eventos_Cerrados']||0);
+      cotizacionesAcum+=parseFloat(r['Cotizaciones']||0);
+    });
+
+    var totalMesAcum=acum['Taquilla']+acum['E-com']+acum['Eventos']+acum['Juegos']+acum['Atracciones']+acum['ToGo'];
+
+    // Meta acumulada proporcional: META_MES * (días con datos / 31)
+    var diasConDatos=diasReales.filter(function(r){
+      var tot=parseFloat(r['Taquilla']||0)+parseFloat(r['E-com']||r['Ecom']||0)+parseFloat(r['Eventos']||0)+parseFloat(r['Juegos']||0)+parseFloat(r['Atracciones']||0)+parseFloat(r['ToGo']||0);
+      return tot>0;
+    }).length;
+    var metaMesAcum=META_MES*(diasConDatos/31);
+
+    // Tabla acumulado
+    var tbC=g('r-centros-table');
+    var html='';
+    centros.forEach(function(c,i){
+      var llave=llaves[i];
+      var real=acum[llave]||0;
+      // Meta por centro proporcional a participación histórica
+      var metaCentro=metaMesAcum>0?(real/totalMesAcum)*metaMesAcum:0;
+      // Si no hay total aún, usar distribución base
+      if(totalMesAcum<=0)metaCentro=metaMesAcum/6;
+      var pctCumpl=metaCentro>0?real/metaCentro*100:0;
+      var sem='sem-gris';
+      if(metaCentro>0){sem=pctCumpl>=95?'sem-verde':pctCumpl>=80?'sem-amarillo':'sem-rojo';}
+      html+='<tr><td><strong>'+c+'</strong></td><td>'+fmt(real)+'</td><td>'+fmt(metaCentro)+'</td><td style="color:'+(pctCumpl>=95?'var(--green)':pctCumpl>=80?'var(--yellow)':'var(--red)')+'">'+pctCumpl.toFixed(1)+'%</td><td>—</td><td>—</td><td><span class="semaforo '+sem+'"></span></td></tr>';
+    });
+    tbC.innerHTML=html||'<tr><td colspan="7" class="empty">Sin datos</td></tr>';
+
+    // Total mes
+    g('kpi-total-mes').textContent=fmt(totalMesAcum);
+    g('kpi-meta-mes').textContent=fmt(META_MES);
+    var cumplMes=totalMesAcum/META_MES*100;
+    g('kpi-cumpl-mes').textContent=cumplMes.toFixed(1)+'%';
+    g('kpi-cumpl-mes').style.color=cumplMes>=95?'var(--green)':cumplMes>=80?'var(--yellow)':'var(--red)';
+
+    // Indicadores adicionales
+    g('kpi-visitantes').textContent=visitantesAcum.toLocaleString();
+    g('kpi-eventos-cerrados').textContent=eventosCerradosAcum.toLocaleString();
+    g('kpi-cotizaciones').textContent=cotizacionesAcum.toLocaleString();
+    var tasaCierre=cotizacionesAcum>0?(eventosCerradosAcum/cotizacionesAcum*100).toFixed(1)+'%':'—';
+    g('kpi-tasa-cierre').textContent=tasaCierre;
+    var ticketProm=visitantesAcum>0?fmt(totalMesAcum/visitantesAcum):'—';
+    g('kpi-ticket-prom').textContent=ticketProm;
+
+    // KPIs Semanales
+    if(kpisData&&kpisData.length>0){
+      // Última semana de semanal
+      var ultimaSem=null;
+      if(semanal&&semanal.length>0){
+        for(var s=semanal.length-1;s>=0;s--){
+          var sr=semanal[s];
+          if(parseFloat(sr['Ventas_Total']||0)>0){ultimaSem=sr;break;}
+        }
+        if(!ultimaSem)ultimaSem=semanal[semanal.length-1];
+      }
+      var tbKPI=g('kpi-semanal-table');
+      var hKPI='';
+      kpisData.forEach(function(k){
+        var nombre=k['KPI']||k['kpi']||'';
+        if(!nombre)return;
+        var meta=parseFloat(k['Meta']||0);
+        var verde=parseFloat(k['Verde_≥']||k['Verde']||0);
+        var amarillo=parseFloat(k['Amarillo_≥']||k['Amarillo']||0);
+        var rojo=parseFloat(k['Rojo_<']||k['Rojo']||0);
+        var unidad=k['Unidad']||'';
+        // Buscar valor actual en semanal
+        var actual=0;
+        if(ultimaSem){
+          var campoMap={'Ventas_Mensual':'Ventas_Total','Visitantes':'Visitantes_Total','NPS':'NPS','Costo_Alimentos':'Costo_Alimentos','Costo_Laboral':'Costo_Laboral','Margen_Contribucion':'Margen_Contribucion','Uptime_Juegos':'Uptime_Juegos','Tasa_Cierre':'Tasa_Cierre_Eventos','Food_Waste':'Food_Waste','Coin_Drop':'Coin_Drop','Redes_Sociales':'Redes_Sociales'};
+          var campo=campoMap[nombre]||nombre;
+          actual=parseFloat(ultimaSem[campo]||0);
+        }
+        var sem2='sem-gris', semTxt='Sin datos';
+        if(actual>0){
+          if(actual>=verde){sem2='sem-verde';semTxt='Verde';}
+          else if(actual>=amarillo){sem2='sem-amarillo';semTxt='Amarillo';}
+          else{sem2='sem-rojo';semTxt='Rojo';}
+        }
+        hKPI+='<tr><td>'+nombre+'</td><td>'+meta+'</td><td style="color:var(--green)">'+verde+'</td><td style="color:var(--yellow)">'+amarillo+'</td><td style="color:var(--red)">'+rojo+'</td><td>'+actual+'</td><td>'+unidad+'</td><td><span class="semaforo '+sem2+'" title="'+semTxt+'"></span></td></tr>';
+      });
+      tbKPI.innerHTML=hKPI||'<tr><td colspan="8" class="empty">Sin KPIs configurados</td></tr>';
+    }
+
+    g('sheets-last-update').textContent='Actualizado: '+new Date().toLocaleString('es-MX');
+    showMsg('msg-reportes','ok','✅ Datos cargados desde Google Sheets.');
+  }catch(e){
+    showMsg('msg-reportes','err','❌ No se pudieron cargar los datos del Sheet. Verifica que sea público.');
+    console.error(e);
+  }
+}
+
+// ============ RENDER VENTAS ============
 function renderVentas(txs){
   var total=txs.reduce(function(s,t){return s+(t.Amount||0);},0);
   var avg=txs.length?total/txs.length:0;
@@ -370,7 +556,7 @@ function renderVentas(txs){
   if(chartVT)chartVT.destroy();
   chartVT=new Chart(g('chart-ventas-tipo'),{type:'doughnut',data:{labels:types,datasets:[{data:types.map(function(k){return byType[k];}),backgroundColor:['#D85A30','#4ade80','#60a5fa','#facc15','#f87171']}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{color:'#888',font:{size:11},boxWidth:12}}}}});
   var tb=g('v-table');
-  if(!txs.length){tb.innerHTML='<tr><td colspan="7" class="empty">Sin datos en el período</td></tr>';return;}
+  if(!txs.length){tb.innerHTML='<tr><td colspan="7" class="empty">Sin datos</td></tr>';return;}
   tb.innerHTML=txs.slice(0,50).map(function(t){var a=t.Amount||0;return'<tr><td>'+(t.ID||'')+'</td><td>'+(t.DateTime||'').replace('T',' ').split('.')[0]+'</td><td>'+(t.CardNumber||'—')+'</td><td>'+(t.StoreID||'—')+'</td><td><span class="badge badge-blue">Tipo '+(t.TransTypeID||'?')+'</span></td><td style="color:'+(a>=0?'#4ade80':'#f87171')+'">$'+a.toFixed(2)+'</td><td><span class="badge '+(a>=0?'badge-green':'badge-red')+'">'+(a>=0?'OK':'Débito')+'</span></td></tr>';}).join('');
 }
 
@@ -382,66 +568,26 @@ function renderJuegosReporte(games,fromDate,toDate){
   g('j-ingresos').textContent='$'+totalA.toFixed(2);
   g('j-activos').textContent=activos;
   g('j-avg').textContent=activos?(totalJ/activos).toFixed(1):'0';
-  // Gráfica por grupo
   var byGroup={};
   games.forEach(function(gm){var gr=gm.GroupName||'Otro';byGroup[gr]=(byGroup[gr]||0)+(gm.TotalPlays||0);});
   var groups=Object.keys(byGroup);
   if(chartJD)chartJD.destroy();
   chartJD=new Chart(g('chart-juegos-dia'),{type:'bar',data:{labels:groups,datasets:[{label:'Jugadas',data:groups.map(function(gr){return byGroup[gr];}),backgroundColor:'#60a5fa',borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#888'}},y:{ticks:{color:'#888'},grid:{color:'#2e2e2e'}}}}});
-  // Gráfica tipo crédito estimado
   var byCred={Normal:0,Cortesía:0,Tiempo:0};
   games.forEach(function(gm){byCred.Normal+=(gm.CreditPlays||0);byCred.Cortesía+=(gm.CourtesyPlays||0);byCred.Tiempo+=(gm.Time||0);});
   var creds=Object.keys(byCred).filter(function(k){return byCred[k]>0;});
   if(chartCT)chartCT.destroy();
   chartCT=new Chart(g('chart-credito-tipo'),{type:'pie',data:{labels:creds,datasets:[{data:creds.map(function(k){return byCred[k];}),backgroundColor:['#D85A30','#4ade80','#60a5fa','#facc15']}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{color:'#888',font:{size:11},boxWidth:12}}}}});
-  // Top más y menos
   var sorted=games.slice().sort(function(a,b){return (b.TotalPlays||0)-(a.TotalPlays||0);});
-  var maxJ=sorted[0]?sorted[0].TotalPlays||1:1;
   function renderRankR(arr,tbId){
     var tb=g(tbId);
     if(!arr.length){tb.innerHTML='<tr><td colspan="4" class="empty">Sin datos</td></tr>';return;}
     tb.innerHTML=arr.map(function(gm,i){var rc=i===0?'rank-1':i===1?'rank-2':i===2?'rank-3':'rank-other';
-      return '<tr><td><span class="rank-num '+rc+'">'+(i+1)+'</span></td><td style="max-width:130px;overflow:hidden;text-overflow:ellipsis" title="'+(gm.GameName||'')+'">'+( gm.GameName||'—')+'</td><td>'+(gm.TotalPlays||0).toLocaleString()+'</td><td>$'+(gm.Collection||0).toFixed(2)+'</td></tr>';
+      return '<tr><td><span class="rank-num '+rc+'">'+(i+1)+'</span></td><td>'+( gm.GameName||'—')+'</td><td>'+(gm.TotalPlays||0).toLocaleString()+'</td><td>$'+(gm.Collection||0).toFixed(2)+'</td></tr>';
     }).join('');
   }
   renderRankR(sorted.slice(0,10),'top-mas');
   renderRankR(sorted.slice().reverse().slice(0,10),'top-menos');
-  // Tabla detalle
-  var tb2=g('j-table');
-  tb2.innerHTML=games.slice(0,50).map(function(gm){
-    return '<tr><td>'+(gm.GameID||'—')+'</td><td>'+fromDate+' ~ '+toDate+'</td><td>—</td><td>'+(gm.GameName||'—')+'</td><td>'+(gm.GroupName||'—')+'</td><td><span class="badge badge-blue">Crédito</span></td><td>$'+(gm.Collection||0).toFixed(2)+'</td></tr>';
-  }).join('');
-}
-
-function renderJuegos(txs){
-  var totalJ=txs.length;
-  var totalA=txs.reduce(function(s,t){return s+(t.Amt||0);},0);
-  var byGame={};
-  txs.forEach(function(t){var gid=t.GameId||t.GameID||0;var gn=gameNames[gid]||('Juego '+gid);if(!byGame[gn])byGame[gn]={jugadas:0,monto:0};byGame[gn].jugadas++;byGame[gn].monto+=(t.Amt||0);});
-  var act=Object.keys(byGame).length;
-  g('j-total').textContent=totalJ.toLocaleString();
-  g('j-ingresos').textContent='$'+totalA.toFixed(2);
-  g('j-activos').textContent=act;
-  g('j-avg').textContent=act?(totalJ/act).toFixed(1):'0';
-  var byDay={};txs.forEach(function(t){var d=(t.DateTime||'').split('T')[0];byDay[d]=(byDay[d]||0)+1;});
-  var days=Object.keys(byDay).sort();
-  if(chartJD)chartJD.destroy();
-  chartJD=new Chart(g('chart-juegos-dia'),{type:'line',data:{labels:days,datasets:[{label:'Jugadas',data:days.map(function(d){return byDay[d];}),borderColor:'#60a5fa',backgroundColor:'rgba(96,165,250,.1)',tension:.3,fill:true,pointRadius:3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#888',maxRotation:45,font:{size:10}}},y:{ticks:{color:'#888'},grid:{color:'#2e2e2e'}}}}});
-  var byCred={};txs.forEach(function(t){var k=CRED[t.CreditType]||('Tipo '+t.CreditType);byCred[k]=(byCred[k]||0)+1;});
-  var creds=Object.keys(byCred);
-  if(chartCT)chartCT.destroy();
-  chartCT=new Chart(g('chart-credito-tipo'),{type:'pie',data:{labels:creds,datasets:[{data:creds.map(function(k){return byCred[k];}),backgroundColor:['#D85A30','#4ade80','#60a5fa','#facc15','#f87171','#a78bfa']}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{color:'#888',font:{size:11},boxWidth:12}}}}});
-  var sorted=Object.entries(byGame).sort(function(a,b){return b[1].jugadas-a[1].jugadas;});
-  function renderRank(arr,tbId){
-    var tb=g(tbId);
-    if(!arr.length){tb.innerHTML='<tr><td colspan="4" class="empty">Sin datos</td></tr>';return;}
-    tb.innerHTML=arr.map(function(e,i){var rc=i===0?'rank-1':i===1?'rank-2':i===2?'rank-3':'rank-other';return'<tr><td><span class="rank-num '+rc+'">'+(i+1)+'</span></td><td style="max-width:130px;overflow:hidden;text-overflow:ellipsis" title="'+e[0]+'">'+e[0]+'</td><td>'+e[1].jugadas.toLocaleString()+'</td><td>$'+e[1].monto.toFixed(2)+'</td></tr>';}).join('');
-  }
-  renderRank(sorted.slice(0,10),'top-mas');
-  renderRank(sorted.slice().reverse().slice(0,10),'top-menos');
-  var tb2=g('j-table');
-  if(!txs.length){tb2.innerHTML='<tr><td colspan="7" class="empty">Sin datos</td></tr>';return;}
-  tb2.innerHTML=txs.slice(0,50).map(function(t){var gid=t.GameId||t.GameID||0;var gn=gameNames[gid]||('ID:'+gid);var cn=CRED[t.CreditType]||('Tipo '+t.CreditType);return'<tr><td>'+t.ID+'</td><td>'+(t.DateTime||'').replace('T',' ').split('.')[0]+'</td><td>'+(t.Card||'—')+'</td><td>'+gn+'</td><td>'+(t.Description||'—')+'</td><td><span class="badge badge-blue">'+cn+'</span></td><td>$'+(t.Amt||0).toFixed(2)+'</td></tr>';}).join('');
 }
 
 function renderRedencion(items){
@@ -454,158 +600,6 @@ function renderRedencion(items){
   var tb=g('r-table');
   if(!items.length){tb.innerHTML='<tr><td colspan="6" class="empty">Sin datos</td></tr>';return;}
   tb.innerHTML=items.map(function(i){return'<tr><td>'+(i.CodigoBarra||'—')+'</td><td>'+(i.Nombre||'—')+'</td><td>'+(i.CantidadRedimida||0)+'</td><td>'+(i.CantidadActual||0)+'</td><td>$'+(i.Precioreal||0).toLocaleString()+'</td><td>'+(i.PrecioCosto||0)+' tickets</td></tr>';}).join('');
-}
-
-var SHEET_ID='1RsLPQerkU_Oe38shlxQeM5H07r410pWKiE7woQ58fd8';
-
-function sheetUrl(sheetName){
-  return '/sheets/'+SHEET_ID+'?sheet='+encodeURIComponent(sheetName)+'&t='+Date.now();
-}
-
-async function fetchSheet(sheetName){
-  try{
-    var resp=await fetch(sheetUrl(sheetName));
-    var text=await resp.text();
-    // Limpiar respuesta de Google Visualization
-    var start=text.indexOf('{');
-    var end=text.lastIndexOf('}');
-    if(start===-1||end===-1)throw new Error('Respuesta inválida');
-    var json=JSON.parse(text.substring(start,end+1));
-    var rows=[];
-    var headers=(json.table.cols||[]).map(function(c){return c.label||c.id||'';});
-    (json.table.rows||[]).forEach(function(r){
-      var obj={};
-      (r.c||[]).forEach(function(cell,i){
-        if(!headers[i])return;
-        if(!cell){obj[headers[i]]=null;return;}
-        // Convertir Date(año,mes,dia) a string legible
-        if(typeof cell.v==='string'&&cell.v.indexOf('Date(')===0){
-          var parts=cell.v.replace('Date(','').replace(')','').split(',');
-          var y=parseInt(parts[0]),m=parseInt(parts[1])+1,d=parseInt(parts[2]);
-          obj[headers[i]]=y+'-'+(m<10?'0':'')+m+'-'+(d<10?'0':'')+d;
-        } else {
-          obj[headers[i]]=cell.v;
-        }
-      });
-      rows.push(obj);
-    });
-    return rows;
-  }catch(e){console.error('Sheet error '+sheetName+':',e.message);return [];}
-}
-
-async function loadSheets(){
-  showMsg('msg-reportes','info','🔄 Cargando datos de Google Sheets...');
-  try{
-    var diario=await fetchSheet('Diario');
-    var semanal=await fetchSheet('Semanal');
-    var kpisData=await fetchSheet('KPIs');
-    
-    if(!diario.length&&!semanal.length){
-      showMsg('msg-reportes','err','❌ No se pudieron cargar los datos del Sheet. Verifica que sea público.');
-      return;
-    }
-    
-    // Último registro diario
-    var centros=['Taquilla','E-com','Eventos','Juegos','Atracciones','ToGo'];
-    
-    // Filtrar solo filas con fecha válida (formato 2026-05-19), excluir totales
-    var filasValidas=diario.filter(function(r){
-      var f=r['Fecha'];
-      return f&&typeof f==='string'&&f.length===10&&f.charAt(4)==='-';
-    });
-    
-    // Último día real
-    var last=filasValidas[filasValidas.length-1]||{};
-    var totalDia=centros.reduce(function(s,c){return s+(last[c]||0);},0);
-    var metaDia=last['Meta_Dia']||0;
-    var cumpl=metaDia>0?(totalDia/metaDia*100):0;
-    
-    g('r-total-dia').textContent='$'+totalDia.toLocaleString('es-MX');
-    g('r-meta-dia').textContent='$'+(metaDia||0).toLocaleString('es-MX');
-    g('r-cumpl').textContent=cumpl.toFixed(1)+'%';
-    g('r-cumpl').style.color=cumpl>=100?'#4ade80':cumpl>=80?'#facc15':'#f87171';
-    
-    // Cards por centro — último día
-    var grid=g('centros-grid');
-    grid.innerHTML=centros.map(function(c){
-      var v=last[c]||0;
-      return '<div class="metric-card"><div class="metric-label">'+c+'</div><div class="metric-value" style="font-size:18px">$'+v.toLocaleString('es-MX')+'</div></div>';
-    }).join('');
-    
-    // Acumulado por centro — suma real de todas las filas válidas
-    var acum={};
-    centros.forEach(function(c){acum[c]=0;});
-    var totalVisitantes=0,totalEventos=0,totalCotiz=0,sumaMetas=0;
-    filasValidas.forEach(function(r){
-      centros.forEach(function(c){acum[c]+=(r[c]||0);});
-      totalVisitantes+=(r['Visitantes']||0);
-      totalEventos+=(r['Eventos_Cerrados']||0);
-      totalCotiz+=(r['Cotizaciones']||0);
-      sumaMetas+=(r['Meta_Dia']||0);
-    });
-    var totalAcum=centros.reduce(function(s,c){return s+acum[c];},0);
-    
-    // Año anterior de semanal
-    var lastSem=semanal[semanal.length-1]||{};
-    
-    var tbody=g('r-centros-table');
-    tbody.innerHTML=centros.map(function(c){
-      var real=acum[c];
-      // Meta acumulada proporcional basada en suma de metas diarias
-      var pctDel=totalAcum>0?(real/totalAcum):0;
-      var metaAcum=Math.round(sumaMetas*pctDel);
-      var pct=metaAcum>0?(real/metaAcum*100):0;
-      var color=pct>=100?'#4ade80':pct>=80?'#facc15':'#f87171';
-      var sem=pct>=100?'🟢':pct>=80?'🟡':'🔴';
-      return '<tr><td><strong>'+c+'</strong></td><td>$'+real.toLocaleString('es-MX')+'</td><td>$'+metaAcum.toLocaleString('es-MX')+'</td><td style="color:'+color+'">'+pct.toFixed(1)+'%</td><td>—</td><td>—</td><td style="font-size:18px">'+sem+'</td></tr>';
-    }).join('');
-    
-    // KPIs semáforo
-    var kpiTb=g('r-kpis-table');
-    if(kpisData.length&&lastSem){
-      var kpiActual={
-        'NPS': lastSem['NPS'],
-        'Uptime_Juegos': lastSem['Uptime_Juegos'],
-        'Tasa_Cierre': lastSem['Tasa_Cierre_Eventos'],
-        'Margen_Contribucion': lastSem['Margen_Contribucion'],
-        'Costo_Alimentos': lastSem['Costo_Alimentos'],
-        'Costo_Laboral': lastSem['Costo_Laboral'],
-        'Food_Waste': lastSem['Food_Waste'],
-        'Coin_Drop': lastSem['Coin_Drop']
-      };
-      kpiTb.innerHTML=kpisData.map(function(k){
-        var kpi=k['KPI']||k[Object.keys(k)[0]];
-        var meta=k['Meta']||k[Object.keys(k)[1]];
-        var verde=k['Verde_≥']||k[Object.keys(k)[2]];
-        var amarillo=k['Amarillo_≥']||k[Object.keys(k)[3]];
-        var rojo=k['Rojo_<']||k[Object.keys(k)[4]];
-        var unidad=k['Unidad']||k[Object.keys(k)[5]]||'';
-        var actual=kpiActual[kpi];
-        var sem='⚪',color='#888';
-        if(actual!=null){
-          if(actual>=verde){sem='🟢';color='#4ade80';}
-          else if(actual>=amarillo){sem='🟡';color='#facc15';}
-          else{sem='🔴';color='#f87171';}
-        }
-        var actStr=actual!=null?actual+' '+unidad:'—';
-        return '<tr><td><strong>'+(kpi||'—')+'</strong></td><td>'+(meta||'—')+'</td><td style="color:#4ade80">'+(verde||'—')+'</td><td style="color:#facc15">'+(amarillo||'—')+'</td><td style="color:#f87171">'+(rojo||'—')+'</td><td style="color:'+color+';font-weight:700">'+actStr+'</td><td>'+(unidad||'')+'</td><td style="font-size:18px">'+sem+'</td></tr>';
-      }).join('');
-    }
-    
-    // Métricas de eventos
-    var tasaCierre=totalCotiz>0?(totalEventos/totalCotiz*100):0;
-    var ticketProm=totalVisitantes>0?(totalAcum/totalVisitantes):0;
-    g('r-eventos-cerrados').textContent=totalEventos.toLocaleString();
-    g('r-cotizaciones').textContent=totalCotiz.toLocaleString();
-    g('r-tasa-cierre').textContent=tasaCierre.toFixed(1)+'%';
-    g('r-visitantes').textContent=totalVisitantes.toLocaleString();
-    g('r-ticket').textContent='$'+Math.round(ticketProm).toLocaleString('es-MX');
-    
-    g('sheets-last-update').textContent='Actualizado: '+new Date().toLocaleString('es-MX');
-    showMsg('msg-reportes','ok','✅ Datos cargados desde Google Sheets.');
-  }catch(e){
-    showMsg('msg-reportes','err','❌ Error: '+e.message);
-  }
 }
 
 function loadDemo(){
@@ -629,21 +623,25 @@ function loadDemo(){
     allRoamingTxs.push({ID:2000+j,DateTime:d2.toISOString(),CardNumber:300000+Math.floor(Math.random()*999),StoreID:['PA','PB','PC'][j%3],TransTypeID:Math.ceil(Math.random()*3),CounterTypeID:1,Amount:+(5+Math.random()*95).toFixed(2)});
   }
   renderVentas(allRoamingTxs);
-  renderJuegos(allGameTxs);
+  renderJuegosReporte(allGameTxs.reduce(function(acc,t){
+    var gid=t.GameId;var gn=gameNames[gid]||'Juego '+gid;
+    var ex=acc.find(function(x){return x.GameID===gid;});
+    if(ex){ex.TotalPlays++;ex.Collection+=t.Amt||0;}
+    else acc.push({GameID:gid,GameName:gn,GroupName:'Demo',TotalPlays:1,Collection:t.Amt||0,CreditPlays:1,CourtesyPlays:0});
+    return acc;
+  },[]),'—','—');
   renderRedencion([
     {CodigoBarra:'S001',Nombre:'Peluche grande',CantidadRedimida:12,CantidadActual:8,Precioreal:250,PrecioCosto:500,CantidadActualPrecio:2000},
-    {CodigoBarra:'S002',Nombre:'Figura coleccionable',CantidadRedimida:5,CantidadActual:20,Precioreal:150,PrecioCosto:300,CantidadActualPrecio:3000},
-    {CodigoBarra:'S003',Nombre:'Dulces surtidos',CantidadRedimida:30,CantidadActual:50,Precioreal:20,PrecioCosto:50,CantidadActualPrecio:1000}
+    {CodigoBarra:'S002',Nombre:'Figura coleccionable',CantidadRedimida:5,CantidadActual:20,Precioreal:150,PrecioCosto:300,CantidadActualPrecio:3000}
   ]);
-  showMsg('msg-ventas','info','📊 Datos de demostración. Usa ⚙️ Configuración y 🔄 Consultar para ver datos reales.');
-  showMsg('msg-juegos','info','📊 Datos de demostración. Usa ⚙️ Configuración y 🔄 Consultar para ver datos reales.');
+  showMsg('msg-ventas','info','📊 Datos de demostración. Usa 🔄 Consultar para datos reales.');
 }
 
 async function testConnection(){
   showMsg('msg-config','info','🔌 Probando conexión...');
   var ok=await doLogin();
   if(ok)showMsg('msg-config','ok','✅ Conexión exitosa con la API de Sacoa.');
-  else showMsg('msg-config','err','❌ Sin conexión. Verifica que el servidor esté corriendo y los datos sean correctos.');
+  else showMsg('msg-config','err','❌ Sin conexión. Verifica los datos.');
 }
 
 loadDemo();
