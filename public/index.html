@@ -251,7 +251,7 @@
 var authToken=null,authTokenJWT=null;
 var chartVD=null,chartVT=null,chartJD=null,chartCT=null;
 var SHEET_ID='1RsLPQerkU_Oe38shlxQeM5H07r410pWKiE7woQ58fd8';
-var META_MES=8500000;
+var META_MES=0;
 var CRED={1:'Normal',3:'Cortesía',5:'Tiempo',1003:'Pase libre'};
 
 var hoy=new Date(),hace30=new Date();
@@ -426,7 +426,7 @@ async function loadSheets(){
     });
 
     var totalMes=resMap['TOTAL MES']||(acum['Taquilla']+acum['E-com']+acum['Eventos']+acum['Juegos']+acum['Atracciones']+acum['ToGo']);
-    var metaMes=resMap['META MES']||META_MES;
+    var metaMes=resMap['META MES']||resMap['Meta Mes']||META_MES;
     var pctMes=metaMes>0?(totalMes/metaMes*100):0;
 
     // Si acumulado sigue en 0, leer del Diario directamente
@@ -604,3 +604,4 @@ loadDemo();
 </script>
 </body>
 </html>
+
