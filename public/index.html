@@ -6,78 +6,77 @@
 <title>Incredible Pizza — Dashboard</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <style>
-  :root { --primary:#D85A30; --primary-dark:#b84820; --bg:#0f0f0f; --bg2:#1a1a1a; --bg3:#242424; --border:#2e2e2e; --text:#f0f0f0; --muted:#888; --green:#4ade80; --yellow:#facc15; --red:#f87171; --blue:#60a5fa; }
-  * { box-sizing:border-box; margin:0; padding:0; }
-  body { font-family:'Segoe UI',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; }
-  .sidebar { position:fixed; top:0; left:0; width:220px; height:100vh; background:var(--bg2); border-right:1px solid var(--border); display:flex; flex-direction:column; z-index:100; }
-  .sidebar-logo { padding:20px 16px 16px; border-bottom:1px solid var(--border); }
-  .brand { font-size:16px; font-weight:700; color:var(--primary); }
-  .sub { font-size:11px; color:var(--muted); margin-top:2px; }
-  .nav-item { display:flex; align-items:center; gap:10px; padding:11px 16px; cursor:pointer; font-size:13px; color:var(--muted); border-left:3px solid transparent; transition:all .15s; }
-  .nav-item:hover { background:var(--bg3); color:var(--text); }
-  .nav-item.active { border-left-color:var(--primary); color:var(--text); background:var(--bg3); }
-  .sidebar-footer { margin-top:auto; padding:12px 16px; border-top:1px solid var(--border); font-size:11px; color:var(--muted); }
-  .dot-live { display:inline-block; width:7px; height:7px; border-radius:50%; background:#4ade80; margin-right:5px; animation:pulse 2s infinite; }
-  .dot-off { display:inline-block; width:7px; height:7px; border-radius:50%; background:var(--red); margin-right:5px; }
-  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
-  .main { margin-left:220px; min-height:100vh; }
-  .topbar { position:sticky; top:0; z-index:50; background:var(--bg2); border-bottom:1px solid var(--border); padding:12px 24px; display:flex; align-items:center; justify-content:space-between; }
-  .topbar-title { font-size:15px; font-weight:600; }
-  .topbar-controls { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
-  input[type="date"],input[type="text"],input[type="password"],input[type="number"] { background:var(--bg3); border:1px solid var(--border); color:var(--text); padding:6px 10px; border-radius:6px; font-size:12px; outline:none; }
-  .btn { padding:7px 14px; border-radius:6px; font-size:12px; font-weight:600; cursor:pointer; border:none; transition:all .15s; }
-  .btn-primary { background:var(--primary); color:#fff; }
-  .btn-primary:hover { background:var(--primary-dark); }
-  .btn-secondary { background:var(--bg3); color:var(--text); border:1px solid var(--border); }
-  .btn-secondary:hover { background:var(--border); }
-  .btn:disabled { opacity:.5; cursor:default; }
-  .page { display:none; padding:24px; }
-  .page.active { display:block; }
-  .metrics-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:12px; margin-bottom:20px; }
-  .metric-card { background:var(--bg2); border:1px solid var(--border); border-radius:10px; padding:16px; position:relative; overflow:hidden; }
-  .metric-card::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; background:var(--primary); }
-  .metric-label { font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.5px; margin-bottom:8px; }
-  .metric-value { font-size:26px; font-weight:700; color:var(--text); }
-  .metric-sub { font-size:11px; color:var(--muted); margin-top:4px; }
-  .charts-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:20px; }
-  .chart-card { background:var(--bg2); border:1px solid var(--border); border-radius:10px; padding:16px; }
-  .chart-title { font-size:13px; font-weight:600; margin-bottom:14px; }
-  .chart-wrap { position:relative; height:220px; }
-  .table-card { background:var(--bg2); border:1px solid var(--border); border-radius:10px; overflow:hidden; margin-bottom:20px; }
-  .table-header { padding:14px 16px; border-bottom:1px solid var(--border); font-size:13px; font-weight:600; display:flex; justify-content:space-between; align-items:center; }
-  .table-wrap { overflow-x:auto; }
-  table { width:100%; border-collapse:collapse; font-size:12px; }
-  th { text-align:left; padding:10px 12px; color:var(--muted); font-weight:500; border-bottom:1px solid var(--border); white-space:nowrap; }
-  td { padding:10px 12px; border-bottom:1px solid var(--border); color:var(--text); white-space:nowrap; }
-  tr:last-child td { border-bottom:none; }
-  tr:hover td { background:var(--bg3); }
-  .badge { display:inline-block; padding:2px 8px; border-radius:999px; font-size:10px; font-weight:600; }
-  .badge-green { background:rgba(74,222,128,.15); color:var(--green); }
-  .badge-red { background:rgba(248,113,113,.15); color:var(--red); }
-  .badge-yellow { background:rgba(250,204,21,.15); color:var(--yellow); }
-  .badge-blue { background:rgba(96,165,250,.15); color:var(--blue); }
-  .rank-num { width:28px; height:28px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; }
-  .rank-1{background:rgba(250,204,21,.2);color:var(--yellow);} .rank-2{background:rgba(156,163,175,.2);color:#9ca3af;} .rank-3{background:rgba(180,83,9,.2);color:#f97316;} .rank-other{background:var(--bg3);color:var(--muted);}
-  .msg { padding:12px 16px; border-radius:8px; font-size:13px; margin-bottom:16px; }
-  .msg-info { background:rgba(96,165,250,.1); border:1px solid rgba(96,165,250,.3); color:var(--blue); }
-  .msg-err { background:rgba(248,113,113,.1); border:1px solid rgba(248,113,113,.3); color:var(--red); }
-  .msg-ok { background:rgba(74,222,128,.1); border:1px solid rgba(74,222,128,.3); color:var(--green); }
-  .config-section { background:var(--bg2); border:1px solid var(--border); border-radius:10px; padding:20px; margin-bottom:16px; }
-  .config-title { font-size:13px; font-weight:600; margin-bottom:14px; color:var(--primary); }
-  .config-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
-  .field { display:flex; flex-direction:column; gap:5px; }
-  .field label { font-size:11px; color:var(--muted); }
-  .field input { width:100%; }
-  .top-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:20px; }
-  .empty { text-align:center; padding:40px; color:var(--muted); font-size:13px; }
-  .semaforo { display:inline-block; width:14px; height:14px; border-radius:50%; }
-  .sem-verde { background:var(--green); }
-  .sem-amarillo { background:var(--yellow); }
-  .sem-rojo { background:var(--red); }
-  .sem-gris { background:var(--muted); }
-  .kpi-section-title { font-size:13px; font-weight:700; color:var(--primary); margin:20px 0 10px; padding-bottom:6px; border-bottom:1px solid var(--border); }
-  .acum-highlight { background:rgba(216,90,48,.08); border:1px solid rgba(216,90,48,.3); border-radius:10px; padding:16px; margin-bottom:20px; }
-  .acum-highlight .metric-card::before { background: var(--primary); }
+  :root{--primary:#D85A30;--primary-dark:#b84820;--bg:#0f0f0f;--bg2:#1a1a1a;--bg3:#242424;--border:#2e2e2e;--text:#f0f0f0;--muted:#888;--green:#4ade80;--yellow:#facc15;--red:#f87171;--blue:#60a5fa;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+  .sidebar{position:fixed;top:0;left:0;width:220px;height:100vh;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;z-index:100;}
+  .sidebar-logo{padding:20px 16px 16px;border-bottom:1px solid var(--border);}
+  .brand{font-size:16px;font-weight:700;color:var(--primary);}
+  .sub{font-size:11px;color:var(--muted);margin-top:2px;}
+  .nav-item{display:flex;align-items:center;gap:10px;padding:11px 16px;cursor:pointer;font-size:13px;color:var(--muted);border-left:3px solid transparent;transition:all .15s;}
+  .nav-item:hover{background:var(--bg3);color:var(--text);}
+  .nav-item.active{border-left-color:var(--primary);color:var(--text);background:var(--bg3);}
+  .sidebar-footer{margin-top:auto;padding:12px 16px;border-top:1px solid var(--border);font-size:11px;color:var(--muted);}
+  .dot-live{display:inline-block;width:7px;height:7px;border-radius:50%;background:#4ade80;margin-right:5px;animation:pulse 2s infinite;}
+  .dot-off{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--red);margin-right:5px;}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+  .main{margin-left:220px;min-height:100vh;}
+  .topbar{position:sticky;top:0;z-index:50;background:var(--bg2);border-bottom:1px solid var(--border);padding:12px 24px;display:flex;align-items:center;justify-content:space-between;}
+  .topbar-title{font-size:15px;font-weight:600;}
+  .topbar-controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+  input[type="date"],input[type="text"],input[type="password"],input[type="number"]{background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;font-size:12px;outline:none;}
+  .btn{padding:7px 14px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;border:none;transition:all .15s;}
+  .btn-primary{background:var(--primary);color:#fff;}
+  .btn-primary:hover{background:var(--primary-dark);}
+  .btn-secondary{background:var(--bg3);color:var(--text);border:1px solid var(--border);}
+  .btn:disabled{opacity:.5;cursor:default;}
+  .page{display:none;padding:24px;}
+  .page.active{display:block;}
+  .metrics-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:20px;}
+  .metric-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:16px;position:relative;overflow:hidden;}
+  .metric-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--primary);}
+  .metric-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;}
+  .metric-value{font-size:24px;font-weight:700;color:var(--text);}
+  .metric-sub{font-size:11px;color:var(--muted);margin-top:4px;}
+  .charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;}
+  .chart-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:16px;}
+  .chart-title{font-size:13px;font-weight:600;margin-bottom:14px;}
+  .chart-wrap{position:relative;height:220px;}
+  .table-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:20px;}
+  .table-header{padding:14px 16px;border-bottom:1px solid var(--border);font-size:13px;font-weight:600;display:flex;justify-content:space-between;align-items:center;}
+  .table-wrap{overflow-x:auto;}
+  table{width:100%;border-collapse:collapse;font-size:12px;}
+  th{text-align:left;padding:10px 12px;color:var(--muted);font-weight:500;border-bottom:1px solid var(--border);white-space:nowrap;}
+  td{padding:10px 12px;border-bottom:1px solid var(--border);color:var(--text);white-space:nowrap;}
+  tr:last-child td{border-bottom:none;}
+  tr:hover td{background:var(--bg3);}
+  .badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:10px;font-weight:600;}
+  .badge-green{background:rgba(74,222,128,.15);color:var(--green);}
+  .badge-red{background:rgba(248,113,113,.15);color:var(--red);}
+  .badge-blue{background:rgba(96,165,250,.15);color:var(--blue);}
+  .rank-num{width:28px;height:28px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;}
+  .rank-1{background:rgba(250,204,21,.2);color:var(--yellow);}
+  .rank-2{background:rgba(156,163,175,.2);color:#9ca3af;}
+  .rank-3{background:rgba(180,83,9,.2);color:#f97316;}
+  .rank-other{background:var(--bg3);color:var(--muted);}
+  .msg{padding:12px 16px;border-radius:8px;font-size:13px;margin-bottom:16px;}
+  .msg-info{background:rgba(96,165,250,.1);border:1px solid rgba(96,165,250,.3);color:var(--blue);}
+  .msg-err{background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.3);color:var(--red);}
+  .msg-ok{background:rgba(74,222,128,.1);border:1px solid rgba(74,222,128,.3);color:var(--green);}
+  .config-section{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:20px;margin-bottom:16px;}
+  .config-title{font-size:13px;font-weight:600;margin-bottom:14px;color:var(--primary);}
+  .config-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .field{display:flex;flex-direction:column;gap:5px;}
+  .field label{font-size:11px;color:var(--muted);}
+  .field input{width:100%;}
+  .top-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;}
+  .empty{text-align:center;padding:40px;color:var(--muted);font-size:13px;}
+  .sem{display:inline-block;width:14px;height:14px;border-radius:50%;vertical-align:middle;}
+  .sem-v{background:var(--green);}
+  .sem-a{background:var(--yellow);}
+  .sem-r{background:var(--red);}
+  .sem-g{background:var(--muted);}
+  .sec-title{font-size:13px;font-weight:700;color:var(--primary);margin:20px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border);}
 </style>
 </head>
 <body>
@@ -107,7 +106,6 @@
     </div>
   </div>
 
-  <!-- VENTAS -->
   <div class="page active" id="page-ventas">
     <div id="msg-ventas"></div>
     <div class="metrics-grid">
@@ -122,11 +120,10 @@
     </div>
     <div class="table-card">
       <div class="table-header"><span>Últimas transacciones</span><span id="v-count" style="font-size:11px;color:var(--muted)"></span></div>
-      <div class="table-wrap"><table><thead><tr><th>ID</th><th>Fecha/Hora</th><th>Tarjeta</th><th>Tienda</th><th>Tipo</th><th>Monto</th><th>Estado</th></tr></thead><tbody id="v-table"><tr><td colspan="7" class="empty">Haz clic en 📊 Demo para ver datos de ejemplo</td></tr></tbody></table></div>
+      <div class="table-wrap"><table><thead><tr><th>ID</th><th>Fecha/Hora</th><th>Tarjeta</th><th>Tienda</th><th>Tipo</th><th>Monto</th><th>Estado</th></tr></thead><tbody id="v-table"><tr><td colspan="7" class="empty">Haz clic en 📊 Demo para ver datos</td></tr></tbody></table></div>
     </div>
   </div>
 
-  <!-- JUEGOS -->
   <div class="page" id="page-juegos">
     <div id="msg-juegos"></div>
     <div class="metrics-grid">
@@ -151,7 +148,6 @@
     </div>
   </div>
 
-  <!-- REDENCION -->
   <div class="page" id="page-redencion">
     <div id="msg-red"></div>
     <div class="metrics-grid">
@@ -165,7 +161,6 @@
     </div>
   </div>
 
-  <!-- CONFIG -->
   <div class="page" id="page-config">
     <div class="config-section">
       <div class="config-title">⚙️ Conexión a la API de Sacoa</div>
@@ -200,8 +195,7 @@
       <button class="btn btn-primary" onclick="loadSheets()">🔄 Actualizar desde Sheets</button>
     </div>
 
-    <!-- Ventas HOY -->
-    <div class="kpi-section-title">💰 Ventas por Centro — Último registro</div>
+    <div class="sec-title">💰 Ventas por Centro — Último registro</div>
     <div class="metrics-grid" style="margin-bottom:12px;">
       <div class="metric-card"><div class="metric-label">Taquilla</div><div class="metric-value" id="kpi-taquilla">—</div></div>
       <div class="metric-card"><div class="metric-label">E-com</div><div class="metric-value" id="kpi-ecom">—</div></div>
@@ -216,8 +210,7 @@
       <div class="metric-card"><div class="metric-label">% Cumplimiento</div><div class="metric-value" id="kpi-cumpl-dia">—</div></div>
     </div>
 
-    <!-- Acumulado del Mes -->
-    <div class="kpi-section-title">📈 Acumulado por Centro — Mayo 2026</div>
+    <div class="sec-title">📈 Acumulado por Centro — Mayo 2026</div>
     <div class="table-card" style="margin-bottom:20px;">
       <div class="table-wrap">
         <table>
@@ -227,15 +220,13 @@
       </div>
     </div>
 
-    <!-- Total Mes -->
     <div class="metrics-grid" style="margin-bottom:20px;">
       <div class="metric-card" style="border-color:var(--primary)"><div class="metric-label">Total Mes</div><div class="metric-value" id="kpi-total-mes" style="color:var(--primary)">—</div></div>
       <div class="metric-card"><div class="metric-label">Meta Mes</div><div class="metric-value" id="kpi-meta-mes">—</div></div>
       <div class="metric-card"><div class="metric-label">% Cumpl Mes</div><div class="metric-value" id="kpi-cumpl-mes">—</div></div>
     </div>
 
-    <!-- KPIs Semanales -->
-    <div class="kpi-section-title">🎯 KPIs Semanales — Semáforo</div>
+    <div class="sec-title">🎯 KPIs Semanales — Semáforo</div>
     <div class="table-card" style="margin-bottom:20px;">
       <div class="table-wrap">
         <table>
@@ -245,8 +236,7 @@
       </div>
     </div>
 
-    <!-- Métricas adicionales -->
-    <div class="kpi-section-title">📊 Indicadores Adicionales (Acumulado)</div>
+    <div class="sec-title">📊 Indicadores Adicionales</div>
     <div class="metrics-grid">
       <div class="metric-card"><div class="metric-label">Eventos Cerrados (Acum)</div><div class="metric-value" id="kpi-eventos-cerrados">—</div><div class="metric-sub">período seleccionado</div></div>
       <div class="metric-card"><div class="metric-label">Cotizaciones Generadas</div><div class="metric-value" id="kpi-cotizaciones">—</div></div>
@@ -258,15 +248,13 @@
 </div>
 
 <script>
-var authToken=null, authTokenJWT=null;
-var chartVD=null, chartVT=null, chartJD=null, chartCT=null;
-var allGameTxs=[], allRoamingTxs=[];
-var gameNames={};
-var CRED={1:'Normal',3:'Cortesía',5:'Tiempo',1003:'Pase libre'};
+var authToken=null,authTokenJWT=null;
+var chartVD=null,chartVT=null,chartJD=null,chartCT=null;
 var SHEET_ID='1RsLPQerkU_Oe38shlxQeM5H07r410pWKiE7woQ58fd8';
 var META_MES=8500000;
+var CRED={1:'Normal',3:'Cortesía',5:'Tiempo',1003:'Pase libre'};
 
-var hoy=new Date(), hace30=new Date();
+var hoy=new Date(),hace30=new Date();
 hace30.setDate(hoy.getDate()-30);
 document.getElementById('date-from').value=hace30.toISOString().split('T')[0];
 document.getElementById('date-to').value=hoy.toISOString().split('T')[0];
@@ -275,8 +263,7 @@ function g(id){return document.getElementById(id);}
 function cfg(k){var m={url:'cfg-url',user:'cfg-user',pass:'cfg-pass',pos:'cfg-pos',emp:'cfg-emp',comp:'cfg-comp'};return g(m[k]).value.trim();}
 function setConn(ok,txt){g('conn-dot').className=ok?'dot-live':'dot-off';g('conn-text').textContent=txt;}
 function showMsg(id,type,txt){var el=g(id);if(el)el.innerHTML='<div class="msg msg-'+type+'">'+txt+'</div>';}
-function fmt(n){return '$'+Math.round(n).toLocaleString('es-MX');}
-function pct(a,b){return b>0?(a/b*100).toFixed(1)+'%':'—';}
+function fmt(n){return '$'+Math.round(n||0).toLocaleString('es-MX');}
 
 function showPage(name){
   document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});
@@ -285,7 +272,7 @@ function showPage(name){
   g('nav-'+name).classList.add('active');
   var t={ventas:'💰 Ventas',juegos:'🕹️ Juegos',redencion:'🎁 Redención',config:'⚙️ Configuración',reportes:'📊 Reportes KPI'};
   g('page-title').textContent=t[name];
-  if(name==='reportes') loadSheets();
+  if(name==='reportes')loadSheets();
 }
 
 async function apiPost(ep,body){
@@ -317,106 +304,93 @@ async function loadAll(){
   if(!ok){showMsg('msg-ventas','err','❌ Sin conexión. Revisa ⚙️ Configuración.');btn.disabled=false;btn.textContent='🔄 Consultar';return;}
   var pos=parseInt(cfg('pos')),emp=parseInt(cfg('emp')),comp=parseInt(cfg('comp'));
   var rx=getRange();
-  var fromStr=rx.from+' 00:00:00', toStr=rx.to+' 23:59:59';
+  var fromStr=rx.from+' 00:00:00',toStr=rx.to+' 23:59:59';
   try{
     var rdS=await apiPost('/dcsReports/sales',{posId:pos,empId:emp,token:authTokenJWT,extEmpId:emp,range:{from:fromStr,to:toStr}});
     if(rdS.statusCode===200&&rdS.body){
-      var sales=rdS.body, txs=[];
+      var sales=rdS.body,txs=[];
       if(sales.byPosition){sales.byPosition.forEach(function(p,i){txs.push({ID:i+1,DateTime:rx.from+'T12:00:00Z',CardNumber:'—',StoreID:p.POSDescription||'—',TransTypeID:1,Amount:p.Amount||0});});}
       else if(sales.payments){sales.payments.forEach(function(p,i){txs.push({ID:i+1,DateTime:rx.from+'T12:00:00Z',CardNumber:'—',StoreID:p.PaymentName||'—',TransTypeID:1,Amount:p.Total||0});});}
-      allRoamingTxs=txs; renderVentas(txs);
-      showMsg('msg-ventas','ok','✅ Datos de ventas del '+rx.from+' al '+rx.to);
-    }else{showMsg('msg-ventas','err','❌ Sin datos de ventas en ese período');}
-  }catch(e){showMsg('msg-ventas','err','❌ Error ventas: '+e.message);}
+      renderVentas(txs);
+      showMsg('msg-ventas','ok','✅ Datos del '+rx.from+' al '+rx.to);
+    }else{showMsg('msg-ventas','err','❌ Sin datos en ese período');}
+  }catch(e){showMsg('msg-ventas','err','❌ Error: '+e.message);}
   try{
     var gdR=await apiPost('/dcsReports/gamesActivity',{posId:pos,empId:emp,token:authTokenJWT,extEmpId:emp,range:{from:fromStr,to:toStr}});
     if(gdR.statusCode===200&&gdR.body&&gdR.body.data&&gdR.body.data.length>0){
       renderJuegosReporte(gdR.body.data,rx.from,rx.to);
-      showMsg('msg-juegos','ok','✅ '+gdR.body.data.length+' juegos cargados del '+rx.from+' al '+rx.to);
-    }else{showMsg('msg-juegos','err','❌ Sin datos de juegos en ese período');}
-  }catch(e){showMsg('msg-juegos','err','❌ Error juegos: '+e.message);}
+      showMsg('msg-juegos','ok','✅ '+gdR.body.data.length+' juegos del '+rx.from+' al '+rx.to);
+    }else{showMsg('msg-juegos','err','❌ Sin datos de juegos');}
+  }catch(e){showMsg('msg-juegos','err','❌ Error: '+e.message);}
   try{
     var red=await apiPost('/reports/redemption/itemsRedeemed',{token:authToken,empId:emp,computerId:String(comp),from:rx.from,to:rx.to,providerId:1});
     if(red.statusCode===200)renderRedencion(red.body.payLoad||[]);
   }catch(e){}
   g('info-fetch').textContent=new Date().toLocaleString('es-MX');
-  btn.disabled=false; btn.textContent='🔄 Consultar';
+  btn.disabled=false;btn.textContent='🔄 Consultar';
 }
 
-// ============ GOOGLE SHEETS ============
-function sheetUrl(sheetName){
-  return '/sheets/'+SHEET_ID+'?sheet='+encodeURIComponent(sheetName)+'&t='+Date.now();
-}
-
+// ===== GOOGLE SHEETS =====
 async function fetchSheet(sheetName){
   try{
-    var resp=await fetch(sheetUrl(sheetName));
+    var resp=await fetch('/sheets/'+SHEET_ID+'?sheet='+encodeURIComponent(sheetName)+'&t='+Date.now());
     var text=await resp.text();
-    var s=text.indexOf('{'), e=text.lastIndexOf('}');
+    var s=text.indexOf('{'),e=text.lastIndexOf('}');
     if(s<0||e<0)return [];
     var json=JSON.parse(text.substring(s,e+1));
     if(!json.table||!json.table.rows)return [];
     var cols=json.table.cols.map(function(c){return c.label;});
     var rows=[];
     json.table.rows.forEach(function(row){
-      if(!row.c||!row.c[0]||!row.c[0].v)return; // saltar filas vacías
-      var v0=String(row.c[0].v||'');
-      // Saltar fila de TOTAL o encabezados
-      if(v0.toUpperCase().indexOf('TOTAL')>=0||v0.toUpperCase().indexOf('FECHA')>=0)return;
+      if(!row.c)return;
       var obj={};
       cols.forEach(function(col,i){
         var cell=row.c&&row.c[i];
         var val=cell?cell.v:null;
-        // Convertir fechas de formato Date(yyyy,m,d)
         if(val&&typeof val==='string'&&val.indexOf('Date(')===0){
           var parts=val.replace('Date(','').replace(')','').split(',');
           var yr=parseInt(parts[0]),mo=parseInt(parts[1]),dy=parseInt(parts[2]);
-          val=(yr)+'-'+(mo+1<10?'0':'')+(mo+1)+'-'+(dy<10?'0':'')+dy;
+          val=yr+'-'+(mo+1<10?'0':'')+(mo+1)+'-'+(dy<10?'0':'')+dy;
         }
-        obj[col]=val!==null?val:0;
+        obj[col]=val!==null&&val!==undefined?val:0;
       });
       rows.push(obj);
     });
     return rows;
-  }catch(e){console.error('Sheet error '+sheetName+':',e.message);return [];}
+  }catch(e){console.error('Sheet error:',e);return [];}
 }
 
+// Lee el Resumen directamente — que ya tiene todo calculado con fórmulas
 async function loadSheets(){
-  showMsg('msg-reportes','info','🔄 Cargando datos de Google Sheets...');
+  showMsg('msg-reportes','info','🔄 Cargando datos...');
   try{
-    var diario=await fetchSheet('Diario');
-    var semanal=await fetchSheet('Semanal');
+    // Leer pestaña Resumen que ya tiene todo calculado
+    var resRows=await fetchSheet('Resumen');
     var kpisData=await fetchSheet('KPIs');
+    var semanData=await fetchSheet('Semanal');
 
-    if(!diario||diario.length===0){
+    if(!resRows||resRows.length===0){
       showMsg('msg-reportes','err','❌ No se pudieron cargar los datos del Sheet. Verifica que sea público.');
       return;
     }
 
-    // Filtrar solo filas con fecha válida y al menos un valor >0
-    var diasReales=diario.filter(function(r){
-      var fecha=r['Fecha']||r['fecha']||'';
-      return fecha&&fecha.match&&fecha.match(/\d{4}-\d{2}-\d{2}/);
+    // El Resumen tiene estructura: col A = etiqueta, col B = valor
+    var resMap={};
+    resRows.forEach(function(r){
+      var lbl=String(r['IPC DASHBOARD - RESUMEN']||r[Object.keys(r)[0]]||'').trim();
+      var val=parseFloat(r[Object.keys(r)[1]]||0)||0;
+      if(lbl)resMap[lbl]=val;
     });
 
-    // Último día con datos (buscar el último que tenga Total > 0)
-    var ultimoDia=null;
-    for(var i=diasReales.length-1;i>=0;i--){
-      var r=diasReales[i];
-      var tot=(parseFloat(r['Taquilla']||0)+parseFloat(r['E-com']||r['Ecom']||0)+parseFloat(r['Eventos']||0)+parseFloat(r['Juegos']||0)+parseFloat(r['Atracciones']||0)+parseFloat(r['ToGo']||0));
-      if(tot>0){ultimoDia=r;break;}
-    }
-    if(!ultimoDia&&diasReales.length>0)ultimoDia=diasReales[diasReales.length-1];
-
-    // Ventas HOY
-    var taq=parseFloat(ultimoDia&&ultimoDia['Taquilla']||0);
-    var eco=parseFloat(ultimoDia&&(ultimoDia['E-com']||ultimoDia['Ecom']||0)||0);
-    var eve=parseFloat(ultimoDia&&ultimoDia['Eventos']||0);
-    var jue=parseFloat(ultimoDia&&ultimoDia['Juegos']||0);
-    var atr=parseFloat(ultimoDia&&ultimoDia['Atracciones']||0);
-    var tgo=parseFloat(ultimoDia&&ultimoDia['ToGo']||0);
-    var metaDia=parseFloat(ultimoDia&&ultimoDia['Meta_Dia']||350000);
-    var totalDia=taq+eco+eve+jue+atr+tgo;
+    // Ventas HOY — del Resumen
+    var taq=resMap['Taquilla']||0;
+    var eco=resMap['E-com']||0;
+    var eve=resMap['Eventos']||0;
+    var jue=resMap['Juegos']||0;
+    var atr=resMap['Atracciones']||0;
+    var tgo=resMap['ToGo']||0;
+    var totalDia=resMap['TOTAL DÍA']||resMap['TOTAL DIA']||(taq+eco+eve+jue+atr+tgo);
+    var metaDia=resMap['META DÍA']||resMap['META DIA']||350000;
 
     g('kpi-taquilla').textContent=fmt(taq);
     g('kpi-ecom').textContent=fmt(eco);
@@ -426,107 +400,115 @@ async function loadSheets(){
     g('kpi-togo').textContent=fmt(tgo);
     g('kpi-total-dia').textContent=fmt(totalDia);
     g('kpi-meta-dia').textContent=fmt(metaDia);
-    var cumplDia=metaDia>0?(totalDia/metaDia*100).toFixed(1)+'%':'—';
-    g('kpi-cumpl-dia').textContent=cumplDia;
+    var pctDia=metaDia>0?(totalDia/metaDia*100).toFixed(1)+'%':'—';
+    g('kpi-cumpl-dia').textContent=pctDia;
     g('kpi-cumpl-dia').style.color=metaDia>0&&totalDia>=metaDia?'var(--green)':totalDia>=metaDia*0.8?'var(--yellow)':'var(--red)';
 
-    // Acumulado — sumar solo días reales (no TOTAL)
-    var centros=['Taquilla','E-com','Eventos','Juegos','Atracciones','ToGo'];
-    var llaves=['Taquilla','E-com','Eventos','Juegos','Atracciones','ToGo'];
+    // Acumulado — del Resumen
+    // Buscar por posición: el Resumen tiene Taquilla,E-com,Eventos,Juegos,Atracciones,ToGo en dos bloques
+    // Bloque 1: VENTAS HOY (filas 4-9 en Resumen)
+    // Bloque 2: ACUMULADO (filas 15-20 en Resumen)
+    // Leer directo del Resumen buscando después de "ACUMULADO"
+    var enAcum=false;
     var acum={Taquilla:0,'E-com':0,Eventos:0,Juegos:0,Atracciones:0,ToGo:0};
-    var visitantesAcum=0, eventosCerradosAcum=0, cotizacionesAcum=0;
+    var centrosKeys=['Taquilla','E-com','Eventos','Juegos','Atracciones','ToGo'];
+    var acumIdx=0;
 
-    diasReales.forEach(function(r){
-      acum['Taquilla']+=parseFloat(r['Taquilla']||0);
-      acum['E-com']+=parseFloat(r['E-com']||r['Ecom']||0);
-      acum['Eventos']+=parseFloat(r['Eventos']||0);
-      acum['Juegos']+=parseFloat(r['Juegos']||0);
-      acum['Atracciones']+=parseFloat(r['Atracciones']||0);
-      acum['ToGo']+=parseFloat(r['ToGo']||0);
-      visitantesAcum+=parseFloat(r['Visitantes']||0);
-      eventosCerradosAcum+=parseFloat(r['Eventos_Cerrados']||0);
-      cotizacionesAcum+=parseFloat(r['Cotizaciones']||0);
+    resRows.forEach(function(r){
+      var lbl=String(r[Object.keys(r)[0]]||'').trim();
+      var val=parseFloat(r[Object.keys(r)[1]]||0)||0;
+      if(lbl.toUpperCase().indexOf('ACUMULADO')>=0){enAcum=true;acumIdx=0;return;}
+      if(lbl.toUpperCase().indexOf('TOTAL MES')>=0||lbl.toUpperCase().indexOf('META MES')>=0){enAcum=false;}
+      if(enAcum&&acumIdx<6&&lbl&&val>0){
+        acum[centrosKeys[acumIdx]]=val;
+        acumIdx++;
+      }
     });
 
-    var totalMesAcum=acum['Taquilla']+acum['E-com']+acum['Eventos']+acum['Juegos']+acum['Atracciones']+acum['ToGo'];
+    var totalMes=resMap['TOTAL MES']||(acum['Taquilla']+acum['E-com']+acum['Eventos']+acum['Juegos']+acum['Atracciones']+acum['ToGo']);
+    var metaMes=resMap['META MES']||META_MES;
+    var pctMes=metaMes>0?(totalMes/metaMes*100):0;
 
-    // Meta acumulada proporcional: META_MES * (días con datos / 31)
-    var diasConDatos=diasReales.filter(function(r){
-      var tot=parseFloat(r['Taquilla']||0)+parseFloat(r['E-com']||r['Ecom']||0)+parseFloat(r['Eventos']||0)+parseFloat(r['Juegos']||0)+parseFloat(r['Atracciones']||0)+parseFloat(r['ToGo']||0);
-      return tot>0;
-    }).length;
-    var metaMesAcum=META_MES*(diasConDatos/31);
+    // Si acumulado sigue en 0, leer del Diario directamente
+    if(totalMes===0){
+      var diario=await fetchSheet('Diario');
+      diario.forEach(function(r){
+        var fecha=String(r['Fecha']||'');
+        if(!fecha.match(/\d{4}-\d{2}-\d{2}/))return;
+        acum['Taquilla']+=parseFloat(r['Taquilla']||0);
+        acum['E-com']+=parseFloat(r['E-com']||r['Ecom']||0);
+        acum['Eventos']+=parseFloat(r['Eventos']||0);
+        acum['Juegos']+=parseFloat(r['Juegos']||0);
+        acum['Atracciones']+=parseFloat(r['Atracciones']||0);
+        acum['ToGo']+=parseFloat(r['ToGo']||0);
+      });
+      totalMes=acum['Taquilla']+acum['E-com']+acum['Eventos']+acum['Juegos']+acum['Atracciones']+acum['ToGo'];
+      pctMes=metaMes>0?(totalMes/metaMes*100):0;
+    }
 
-    // Tabla acumulado
+    // Meta acumulada = META_MES proporcional a días transcurridos del mes
+    var hoyDia=new Date().getDate();
+    var diasMes=31;
+    var metaAcumTotal=META_MES*(hoyDia/diasMes);
+
     var tbC=g('r-centros-table');
     var html='';
-    centros.forEach(function(c,i){
-      var llave=llaves[i];
-      var real=acum[llave]||0;
-      // Meta por centro proporcional a participación histórica
-      var metaCentro=metaMesAcum>0?(real/totalMesAcum)*metaMesAcum:0;
-      // Si no hay total aún, usar distribución base
-      if(totalMesAcum<=0)metaCentro=metaMesAcum/6;
-      var pctCumpl=metaCentro>0?real/metaCentro*100:0;
-      var sem='sem-gris';
-      if(metaCentro>0){sem=pctCumpl>=95?'sem-verde':pctCumpl>=80?'sem-amarillo':'sem-rojo';}
-      html+='<tr><td><strong>'+c+'</strong></td><td>'+fmt(real)+'</td><td>'+fmt(metaCentro)+'</td><td style="color:'+(pctCumpl>=95?'var(--green)':pctCumpl>=80?'var(--yellow)':'var(--red)')+'">'+pctCumpl.toFixed(1)+'%</td><td>—</td><td>—</td><td><span class="semaforo '+sem+'"></span></td></tr>';
+    centrosKeys.forEach(function(c){
+      var real=acum[c]||0;
+      // Meta por centro = meta total proporcional * participación histórica aproximada
+      var partMap={Taquilla:0.155,'E-com':0.025,Eventos:0.745,Juegos:0.042,Atracciones:0.018,ToGo:0.015};
+      var metaC=metaAcumTotal*(partMap[c]||0.1);
+      var pctC=metaC>0?(real/metaC*100):0;
+      var semC=pctC>=95?'sem-v':pctC>=80?'sem-a':'sem-r';
+      if(real===0)semC='sem-g';
+      html+='<tr><td><strong>'+c+'</strong></td><td>'+fmt(real)+'</td><td>'+fmt(metaC)+'</td><td style="color:'+(pctC>=95?'var(--green)':pctC>=80?'var(--yellow)':'var(--red)')+'">'+pctC.toFixed(1)+'%</td><td>—</td><td>—</td><td><span class="sem '+semC+'"></span></td></tr>';
     });
     tbC.innerHTML=html||'<tr><td colspan="7" class="empty">Sin datos</td></tr>';
 
-    // Total mes
-    g('kpi-total-mes').textContent=fmt(totalMesAcum);
-    g('kpi-meta-mes').textContent=fmt(META_MES);
-    var cumplMes=totalMesAcum/META_MES*100;
-    g('kpi-cumpl-mes').textContent=cumplMes.toFixed(1)+'%';
-    g('kpi-cumpl-mes').style.color=cumplMes>=95?'var(--green)':cumplMes>=80?'var(--yellow)':'var(--red)';
+    g('kpi-total-mes').textContent=fmt(totalMes);
+    g('kpi-meta-mes').textContent=fmt(metaMes);
+    g('kpi-cumpl-mes').textContent=pctMes.toFixed(1)+'%';
+    g('kpi-cumpl-mes').style.color=pctMes>=95?'var(--green)':pctMes>=80?'var(--yellow)':'var(--red)';
 
     // Indicadores adicionales
-    g('kpi-visitantes').textContent=visitantesAcum.toLocaleString();
-    g('kpi-eventos-cerrados').textContent=eventosCerradosAcum.toLocaleString();
-    g('kpi-cotizaciones').textContent=cotizacionesAcum.toLocaleString();
-    var tasaCierre=cotizacionesAcum>0?(eventosCerradosAcum/cotizacionesAcum*100).toFixed(1)+'%':'—';
-    g('kpi-tasa-cierre').textContent=tasaCierre;
-    var ticketProm=visitantesAcum>0?fmt(totalMesAcum/visitantesAcum):'—';
-    g('kpi-ticket-prom').textContent=ticketProm;
+    g('kpi-visitantes').textContent=(resMap['Visitantes']||0).toLocaleString();
+    g('kpi-eventos-cerrados').textContent=(resMap['Eventos Cerrados']||resMap['Eventos_Cerrados']||0).toLocaleString();
+    g('kpi-cotizaciones').textContent=(resMap['Cotizaciones']||0).toLocaleString();
+    var tc=resMap['Cotizaciones']>0?((resMap['Eventos Cerrados']||0)/resMap['Cotizaciones']*100).toFixed(1)+'%':'—';
+    g('kpi-tasa-cierre').textContent=tc;
+    var visT=resMap['Visitantes']||0;
+    g('kpi-ticket-prom').textContent=visT>0?fmt(totalMes/visT):'—';
 
     // KPIs Semanales
     if(kpisData&&kpisData.length>0){
-      // Última semana de semanal
       var ultimaSem=null;
-      if(semanal&&semanal.length>0){
-        for(var s=semanal.length-1;s>=0;s--){
-          var sr=semanal[s];
-          if(parseFloat(sr['Ventas_Total']||0)>0){ultimaSem=sr;break;}
+      if(semanData&&semanData.length>0){
+        for(var s=semanData.length-1;s>=0;s--){
+          if(parseFloat(semanData[s]['Ventas_Total']||0)>0){ultimaSem=semanData[s];break;}
         }
-        if(!ultimaSem)ultimaSem=semanal[semanal.length-1];
+        if(!ultimaSem)ultimaSem=semanData[semanData.length-1];
       }
       var tbKPI=g('kpi-semanal-table');
       var hKPI='';
       kpisData.forEach(function(k){
-        var nombre=k['KPI']||k['kpi']||'';
-        if(!nombre)return;
+        var nombre=String(k['KPI']||k[Object.keys(k)[0]]||'').trim();
+        if(!nombre||nombre.toUpperCase()==='KPI')return;
         var meta=parseFloat(k['Meta']||0);
         var verde=parseFloat(k['Verde_≥']||k['Verde']||0);
         var amarillo=parseFloat(k['Amarillo_≥']||k['Amarillo']||0);
         var rojo=parseFloat(k['Rojo_<']||k['Rojo']||0);
         var unidad=k['Unidad']||'';
-        // Buscar valor actual en semanal
         var actual=0;
         if(ultimaSem){
-          var campoMap={'Ventas_Mensual':'Ventas_Total','Visitantes':'Visitantes_Total','NPS':'NPS','Costo_Alimentos':'Costo_Alimentos','Costo_Laboral':'Costo_Laboral','Margen_Contribucion':'Margen_Contribucion','Uptime_Juegos':'Uptime_Juegos','Tasa_Cierre':'Tasa_Cierre_Eventos','Food_Waste':'Food_Waste','Coin_Drop':'Coin_Drop','Redes_Sociales':'Redes_Sociales'};
-          var campo=campoMap[nombre]||nombre;
+          var mapa={Ventas_Mensual:'Ventas_Total',Visitantes:'Visitantes_Total',NPS:'NPS',Costo_Alimentos:'Costo_Alimentos',Costo_Laboral:'Costo_Laboral',Margen_Contribucion:'Margen_Contribucion',Uptime_Juegos:'Uptime_Juegos',Tasa_Cierre:'Tasa_Cierre_Eventos',Food_Waste:'Food_Waste',Coin_Drop:'Coin_Drop',Redes_Sociales:'Redes_Sociales'};
+          var campo=mapa[nombre]||nombre;
           actual=parseFloat(ultimaSem[campo]||0);
         }
-        var sem2='sem-gris', semTxt='Sin datos';
-        if(actual>0){
-          if(actual>=verde){sem2='sem-verde';semTxt='Verde';}
-          else if(actual>=amarillo){sem2='sem-amarillo';semTxt='Amarillo';}
-          else{sem2='sem-rojo';semTxt='Rojo';}
-        }
-        hKPI+='<tr><td>'+nombre+'</td><td>'+meta+'</td><td style="color:var(--green)">'+verde+'</td><td style="color:var(--yellow)">'+amarillo+'</td><td style="color:var(--red)">'+rojo+'</td><td>'+actual+'</td><td>'+unidad+'</td><td><span class="semaforo '+sem2+'" title="'+semTxt+'"></span></td></tr>';
+        var sem2='sem-g',semTxt='Sin datos';
+        if(actual>0){sem2=actual>=verde?'sem-v':actual>=amarillo?'sem-a':'sem-r';semTxt=actual>=verde?'Verde':actual>=amarillo?'Amarillo':'Rojo';}
+        hKPI+='<tr><td>'+nombre+'</td><td>'+meta+'</td><td style="color:var(--green)">'+verde+'</td><td style="color:var(--yellow)">'+amarillo+'</td><td style="color:var(--red)">'+rojo+'</td><td>'+actual+'</td><td>'+unidad+'</td><td><span class="sem '+sem2+'" title="'+semTxt+'"></span></td></tr>';
       });
-      tbKPI.innerHTML=hKPI||'<tr><td colspan="8" class="empty">Sin KPIs configurados</td></tr>';
+      tbKPI.innerHTML=hKPI||'<tr><td colspan="8" class="empty">Sin KPIs</td></tr>';
     }
 
     g('sheets-last-update').textContent='Actualizado: '+new Date().toLocaleString('es-MX');
@@ -537,7 +519,6 @@ async function loadSheets(){
   }
 }
 
-// ============ RENDER VENTAS ============
 function renderVentas(txs){
   var total=txs.reduce(function(s,t){return s+(t.Amount||0);},0);
   var avg=txs.length?total/txs.length:0;
@@ -563,11 +544,10 @@ function renderVentas(txs){
 function renderJuegosReporte(games,fromDate,toDate){
   var totalJ=games.reduce(function(s,g){return s+(g.TotalPlays||0);},0);
   var totalA=games.reduce(function(s,g){return s+(g.Collection||0);},0);
-  var activos=games.length;
   g('j-total').textContent=totalJ.toLocaleString();
   g('j-ingresos').textContent='$'+totalA.toFixed(2);
-  g('j-activos').textContent=activos;
-  g('j-avg').textContent=activos?(totalJ/activos).toFixed(1):'0';
+  g('j-activos').textContent=games.length;
+  g('j-avg').textContent=games.length?(totalJ/games.length).toFixed(1):'0';
   var byGroup={};
   games.forEach(function(gm){var gr=gm.GroupName||'Otro';byGroup[gr]=(byGroup[gr]||0)+(gm.TotalPlays||0);});
   var groups=Object.keys(byGroup);
@@ -577,17 +557,12 @@ function renderJuegosReporte(games,fromDate,toDate){
   games.forEach(function(gm){byCred.Normal+=(gm.CreditPlays||0);byCred.Cortesía+=(gm.CourtesyPlays||0);byCred.Tiempo+=(gm.Time||0);});
   var creds=Object.keys(byCred).filter(function(k){return byCred[k]>0;});
   if(chartCT)chartCT.destroy();
-  chartCT=new Chart(g('chart-credito-tipo'),{type:'pie',data:{labels:creds,datasets:[{data:creds.map(function(k){return byCred[k];}),backgroundColor:['#D85A30','#4ade80','#60a5fa','#facc15']}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{color:'#888',font:{size:11},boxWidth:12}}}}});
-  var sorted=games.slice().sort(function(a,b){return (b.TotalPlays||0)-(a.TotalPlays||0);});
-  function renderRankR(arr,tbId){
-    var tb=g(tbId);
-    if(!arr.length){tb.innerHTML='<tr><td colspan="4" class="empty">Sin datos</td></tr>';return;}
-    tb.innerHTML=arr.map(function(gm,i){var rc=i===0?'rank-1':i===1?'rank-2':i===2?'rank-3':'rank-other';
-      return '<tr><td><span class="rank-num '+rc+'">'+(i+1)+'</span></td><td>'+( gm.GameName||'—')+'</td><td>'+(gm.TotalPlays||0).toLocaleString()+'</td><td>$'+(gm.Collection||0).toFixed(2)+'</td></tr>';
-    }).join('');
-  }
-  renderRankR(sorted.slice(0,10),'top-mas');
-  renderRankR(sorted.slice().reverse().slice(0,10),'top-menos');
+  if(creds.length)chartCT=new Chart(g('chart-credito-tipo'),{type:'pie',data:{labels:creds,datasets:[{data:creds.map(function(k){return byCred[k];}),backgroundColor:['#D85A30','#4ade80','#60a5fa']}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{color:'#888',font:{size:11},boxWidth:12}}}}});
+  var sorted=games.slice().sort(function(a,b){return(b.TotalPlays||0)-(a.TotalPlays||0);});
+  function rr(arr,id){var tb=g(id);if(!arr.length){tb.innerHTML='<tr><td colspan="4" class="empty">Sin datos</td></tr>';return;}
+    tb.innerHTML=arr.map(function(gm,i){var rc=i===0?'rank-1':i===1?'rank-2':i===2?'rank-3':'rank-other';return'<tr><td><span class="rank-num '+rc+'">'+(i+1)+'</span></td><td>'+(gm.GameName||'—')+'</td><td>'+(gm.TotalPlays||0).toLocaleString()+'</td><td>$'+(gm.Collection||0).toFixed(2)+'</td></tr>';}).join('');}
+  rr(sorted.slice(0,10),'top-mas');
+  rr(sorted.slice().reverse().slice(0,10),'top-menos');
 }
 
 function renderRedencion(items){
@@ -605,42 +580,23 @@ function renderRedencion(items){
 function loadDemo(){
   setConn(true,'Demo activo');
   var base=new Date();base.setDate(base.getDate()-14);
-  var dg={10:'Terminator Salvation',11:'Fast & Furious',12:'Guitar Hero',13:'Air Hockey',14:'Claw Machine',15:'Basketball',16:'Whack-a-Mole',17:'Dance Dance Revolution',18:'Pump It Up',20:'Skee Ball'};
-  gameNames=dg;
+  var dg={10:'Terminator Salvation',11:'Fast & Furious',12:'Guitar Hero',13:'Air Hockey',14:'Claw Machine',15:'Basketball'};
   var gids=Object.keys(dg).map(Number);
-  var wts=[80,60,50,40,35,30,20,15,10,5];
-  var ctypes=[1,3,5,1003];
-  allGameTxs=[];
-  for(var i=0;i<300;i++){
-    var d=new Date(base.getTime());d.setDate(d.getDate()+Math.floor(Math.random()*14));d.setHours(10+Math.floor(Math.random()*10));
-    var tot=wts.reduce(function(a,b){return a+b;},0),r=Math.random()*tot,pick=0;
-    for(var w=0;w<wts.length;w++){r-=wts[w];if(r<=0){pick=w;break;}}
-    allGameTxs.push({ID:1000+i,DateTime:d.toISOString(),Card:300000+Math.floor(Math.random()*999),Amt:+(2+Math.random()*8).toFixed(2),GameId:gids[pick],Description:['Jugada','Tiempo','Cortesía','Pase libre'][i%4],CreditType:ctypes[i%4]});
-  }
-  allRoamingTxs=[];
+  var txs=[];
   for(var j=0;j<150;j++){
-    var d2=new Date(base.getTime());d2.setDate(d2.getDate()+Math.floor(Math.random()*14));d2.setHours(10+Math.floor(Math.random()*10));
-    allRoamingTxs.push({ID:2000+j,DateTime:d2.toISOString(),CardNumber:300000+Math.floor(Math.random()*999),StoreID:['PA','PB','PC'][j%3],TransTypeID:Math.ceil(Math.random()*3),CounterTypeID:1,Amount:+(5+Math.random()*95).toFixed(2)});
+    var d2=new Date(base.getTime());d2.setDate(d2.getDate()+Math.floor(Math.random()*14));
+    txs.push({ID:2000+j,DateTime:d2.toISOString(),CardNumber:300000+Math.floor(Math.random()*999),StoreID:['PA','PB','PC'][j%3],TransTypeID:Math.ceil(Math.random()*3),CounterTypeID:1,Amount:+(5+Math.random()*95).toFixed(2)});
   }
-  renderVentas(allRoamingTxs);
-  renderJuegosReporte(allGameTxs.reduce(function(acc,t){
-    var gid=t.GameId;var gn=gameNames[gid]||'Juego '+gid;
-    var ex=acc.find(function(x){return x.GameID===gid;});
-    if(ex){ex.TotalPlays++;ex.Collection+=t.Amt||0;}
-    else acc.push({GameID:gid,GameName:gn,GroupName:'Demo',TotalPlays:1,Collection:t.Amt||0,CreditPlays:1,CourtesyPlays:0});
-    return acc;
-  },[]),'—','—');
-  renderRedencion([
-    {CodigoBarra:'S001',Nombre:'Peluche grande',CantidadRedimida:12,CantidadActual:8,Precioreal:250,PrecioCosto:500,CantidadActualPrecio:2000},
-    {CodigoBarra:'S002',Nombre:'Figura coleccionable',CantidadRedimida:5,CantidadActual:20,Precioreal:150,PrecioCosto:300,CantidadActualPrecio:3000}
-  ]);
+  renderVentas(txs);
+  var games=gids.map(function(id,i){return{GameID:id,GameName:dg[id],GroupName:'Demo',TotalPlays:Math.floor(50+Math.random()*200),Collection:+(100+Math.random()*500).toFixed(2),CreditPlays:Math.floor(Math.random()*100),CourtesyPlays:0};});
+  renderJuegosReporte(games,'—','—');
   showMsg('msg-ventas','info','📊 Datos de demostración. Usa 🔄 Consultar para datos reales.');
 }
 
 async function testConnection(){
-  showMsg('msg-config','info','🔌 Probando conexión...');
+  showMsg('msg-config','info','🔌 Probando...');
   var ok=await doLogin();
-  if(ok)showMsg('msg-config','ok','✅ Conexión exitosa con la API de Sacoa.');
+  if(ok)showMsg('msg-config','ok','✅ Conexión exitosa.');
   else showMsg('msg-config','err','❌ Sin conexión. Verifica los datos.');
 }
 
