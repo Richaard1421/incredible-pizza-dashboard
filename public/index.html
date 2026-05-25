@@ -408,6 +408,13 @@ async function loadSheets(){
     // Leer pestaña Resumen que ya tiene todo calculado
     var resRows=await fetchSheet('Resumen');
     var resRaw=await fetchSheetRaw('Resumen');
+    // Mantener resMap para compatibilidad con código de Indicadores y KPIs que lo usan
+    var resMap={};
+    resRaw.forEach(function(arr){
+      var lbl=String(arr[0]||'').trim();
+      var val=parseFloat(arr[1])||0;
+      if(lbl&&!resMap[lbl])resMap[lbl]=val; // primer valor encontrado (Ventas HOY)
+    });
     var kpisData=await fetchSheet('KPIs');
     var semanData=await fetchSheet('Semanal');
 
