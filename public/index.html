@@ -407,6 +407,7 @@ async function loadSheets(){
   try{
     // Leer pestaña Resumen que ya tiene todo calculado
     var resRows=await fetchSheet('Resumen');
+    var resRaw=await fetchSheetRaw('Resumen');
     var kpisData=await fetchSheet('KPIs');
     var semanData=await fetchSheet('Semanal');
 
@@ -415,23 +416,35 @@ async function loadSheets(){
       return;
     }
 
-    // El Resumen tiene estructura: col A = etiqueta, col B = valor
-    var resMap={};
-    resRows.forEach(function(r){
-      var lbl=String(r['IPC DASHBOARD - RESUMEN']||r[Object.keys(r)[0]]||'').trim();
-      var val=parseFloat(r[Object.keys(r)[1]]||0)||0;
-      if(lbl)resMap[lbl]=val;
-    });
+    // Función auxiliar: busca en resRaw por nombre de etiqueta en columna A y devuelve el valor de columna B
+    var norm=function(s){return String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim();};
+    var findVal=function(label,startAfter){
+      var lblNorm=norm(label);
+      var startIdx=startAfter?-1:0;
+      if(startAfter){
+        var afterNorm=norm(startAfter);
+        for(var i=0;i<resRaw.length;i++){
+          if(norm(resRaw[i][0]).indexOf(afterNorm)>=0){startIdx=i+1;break;}
+        }
+        if(startIdx===-1)return 0;
+      }
+      for(var j=startIdx;j<resRaw.length;j++){
+        if(norm(resRaw[j][0])===lblNorm)return parseFloat(resRaw[j][1])||0;
+      }
+      return 0;
+    };
 
-    // Ventas HOY — del Resumen
-    var taq=resMap['Taquilla']||0;
-    var eco=resMap['E-com']||0;
-    var eve=resMap['Eventos']||0;
-    var jue=resMap['Juegos']||0;
-    var atr=resMap['Atracciones']||0;
-    var tgo=resMap['ToGo']||0;
-    var totalDia=resMap['TOTAL DÍA']||resMap['TOTAL DIA']||(taq+eco+eve+jue+atr+tgo);
-    var metaDia=resMap['META DÍA']||resMap['META DIA']||350000;
+    // Ventas HOY — leer del primer bloque (antes de ACUMULADO)
+    var taq=findVal('Taquilla');
+    var eco=findVal('E-com');
+    var eve=findVal('Eventos');
+    var jue=findVal('Juegos');
+    var atr=findVal('Atracciones');
+    var tgo=findVal('ToGo');
+    var totalDia=findVal('TOTAL DÍA')||findVal('TOTAL DIA')||(taq+eco+eve+jue+atr+tgo);
+    var metaDia=findVal('META DÍA')||findVal('META DIA')||350000;
+
+    console.log('[Ventas HOY]',{taq:taq,eco:eco,eve:eve,jue:jue,atr:atr,tgo:tgo,totalDia:totalDia});
 
     g('kpi-taquilla').textContent=fmt(taq);
     g('kpi-ecom').textContent=fmt(eco);
@@ -445,29 +458,21 @@ async function loadSheets(){
     g('kpi-cumpl-dia').textContent=pctDia;
     g('kpi-cumpl-dia').style.color=metaDia>0&&totalDia>=metaDia?'var(--green)':totalDia>=metaDia*0.8?'var(--yellow)':'var(--red)';
 
-    // Acumulado — del Resumen
-    // Buscar por posición: el Resumen tiene Taquilla,E-com,Eventos,Juegos,Atracciones,ToGo en dos bloques
-    // Bloque 1: VENTAS HOY (filas 4-9 en Resumen)
-    // Bloque 2: ACUMULADO (filas 15-20 en Resumen)
-    // Leer directo del Resumen buscando después de "ACUMULADO"
-    var enAcum=false;
-    var acum={Taquilla:0,'E-com':0,Eventos:0,Juegos:0,Atracciones:0,ToGo:0};
+    // Acumulado — leer del segundo bloque (después de ACUMULADO)
+    var acum={
+      'Taquilla':findVal('Taquilla','ACUMULADO'),
+      'E-com':findVal('E-com','ACUMULADO'),
+      'Eventos':findVal('Eventos','ACUMULADO'),
+      'Juegos':findVal('Juegos','ACUMULADO'),
+      'Atracciones':findVal('Atracciones','ACUMULADO'),
+      'ToGo':findVal('ToGo','ACUMULADO')
+    };
     var centrosKeys=['Taquilla','E-com','Eventos','Juegos','Atracciones','ToGo'];
-    var acumIdx=0;
 
-    resRows.forEach(function(r){
-      var lbl=String(r[Object.keys(r)[0]]||'').trim();
-      var val=parseFloat(r[Object.keys(r)[1]]||0)||0;
-      if(lbl.toUpperCase().indexOf('ACUMULADO')>=0){enAcum=true;acumIdx=0;return;}
-      if(lbl.toUpperCase().indexOf('TOTAL MES')>=0||lbl.toUpperCase().indexOf('META MES')>=0){enAcum=false;}
-      if(enAcum&&acumIdx<6&&lbl&&val>0){
-        acum[centrosKeys[acumIdx]]=val;
-        acumIdx++;
-      }
-    });
+    console.log('[Acumulado]',acum);
 
-    var totalMes=resMap['TOTAL MES']||(acum['Taquilla']+acum['E-com']+acum['Eventos']+acum['Juegos']+acum['Atracciones']+acum['ToGo']);
-    var metaMes=resMap['META MES']||resMap['Meta Mes']||META_MES;
+    var totalMes=findVal('TOTAL MES')||(acum['Taquilla']+acum['E-com']+acum['Eventos']+acum['Juegos']+acum['Atracciones']+acum['ToGo']);
+    var metaMes=findVal('META MES')||findVal('Meta Mes')||META_MES;
     var pctMes=metaMes>0?(totalMes/metaMes*100):0;
 
     // Si acumulado sigue en 0, leer del Diario directamente
