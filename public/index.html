@@ -380,6 +380,27 @@ async function fetchSheet(sheetName){
   }catch(e){console.error('Sheet error:',e);return [];}
 }
 
+// Lee el Sheet como arrays crudos (celda por POSICIÓN, no por nombre)
+// Útil cuando hay columnas con encabezado vacío que se pierden en fetchSheet
+async function fetchSheetRaw(sheetName){
+  try{
+    var resp=await fetch('/sheets/'+SHEET_ID+'?sheet='+encodeURIComponent(sheetName)+'&t='+Date.now());
+    var text=await resp.text();
+    var s=text.indexOf('{'),e=text.lastIndexOf('}');
+    if(s<0||e<0)return [];
+    var json=JSON.parse(text.substring(s,e+1));
+    if(!json.table||!json.table.rows)return [];
+    // Cada fila es un array de valores por posición de columna [A,B,C,D,E,...]
+    var rows=[];
+    json.table.rows.forEach(function(row){
+      if(!row.c)return;
+      var arr=row.c.map(function(cell){return cell?cell.v:null;});
+      rows.push(arr);
+    });
+    return rows;
+  }catch(e){console.error('SheetRaw error:',e);return [];}
+}
+
 // Lee el Resumen directamente — que ya tiene todo calculado con fórmulas
 async function loadSheets(){
   showMsg('msg-reportes','info','🔄 Cargando datos...');
@@ -531,26 +552,32 @@ async function loadSheets(){
       tbKPI.innerHTML=hKPI||'<tr><td colspan="8" class="empty">Sin KPIs</td></tr>';
     }
 
-    // Centro de Gastos de Admin — leer filas 35, 36 y 37 del Resumen
-    // (la primera fila del array es la fila 2 del Sheet, porque la 1 es header)
+    // Centro de Gastos de Admin — usa fetchSheetRaw porque las columnas
+    // sin encabezado (Presupuesto, Variación, 2026) se pierden en fetchSheet normal
     try{
       var tbGA=g('gastos-admin-table');
       var conceptos=['Gastos de Operación','Gasto de servicios MTTO','Gastos generales de admin'];
+      var norm=function(s){return String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim();};
+      var rawRows=await fetchSheetRaw('Resumen');
+      console.log('[Gastos] Total filas crudas:',rawRows.length);
       var htmlGA='';
       conceptos.forEach(function(concepto){
-        // Buscar la fila por nombre del concepto
+        var conceptoNorm=norm(concepto);
         var fila=null;
-        resRows.forEach(function(r){
-          var lbl=String(r[Object.keys(r)[0]]||'').trim();
-          if(lbl===concepto)fila=r;
+        rawRows.forEach(function(arr){
+          if(norm(arr[0])===conceptoNorm)fila=arr;
         });
-        var keys=fila?Object.keys(fila):[];
-        var v2025=fila?(parseFloat(fila[keys[1]]||0)||0):0;
-        var vPres=fila?(parseFloat(fila[keys[2]]||0)||0):0;
-        var vVar=fila?(parseFloat(fila[keys[3]]||0)||0):0;
-        var v2026=fila?(parseFloat(fila[keys[4]]||0)||0):0;
+        // arr[0]=Concepto, arr[1]=2025, arr[2]=Presupuesto, arr[3]=Variación, arr[4]=2026
+        var v2025=fila?(parseFloat(fila[1])||0):0;
+        var vPres=fila?(parseFloat(fila[2])||0):0;
+        var vVarManual=fila?(parseFloat(fila[3])||0):0;
+        var v2026=fila?(parseFloat(fila[4])||0):0;
+        // Variación: si está capturada en el Sheet úsala; si no, calcúlala 2026-2025
+        var vVar=vVarManual!==0?vVarManual:(v2026-v2025);
         var fmtCell=function(v){return v===0?'—':fmt(v);};
-        htmlGA+='<tr><td><strong>'+concepto+'</strong></td><td>'+fmtCell(v2025)+'</td><td>'+fmtCell(vPres)+'</td><td>'+fmtCell(vVar)+'</td><td>'+fmtCell(v2026)+'</td></tr>';
+        var colorVar=vVar>0?'var(--green)':vVar<0?'var(--red)':'inherit';
+        htmlGA+='<tr><td><strong>'+concepto+'</strong></td><td>'+fmtCell(v2025)+'</td><td>'+fmtCell(vPres)+'</td><td style="color:'+colorVar+'">'+fmtCell(vVar)+'</td><td>'+fmtCell(v2026)+'</td></tr>';
+        console.log('[Gastos]',concepto,'→ 2025:',v2025,'Pres:',vPres,'Var:',vVar,'2026:',v2026,'| fila:',fila);
       });
       tbGA.innerHTML=htmlGA||'<tr><td colspan="5" class="empty">Sin datos de gastos</td></tr>';
     }catch(eGA){
