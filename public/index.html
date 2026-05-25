@@ -244,6 +244,26 @@
       <div class="metric-card"><div class="metric-label">Visitantes (Acum)</div><div class="metric-value" id="kpi-visitantes">—</div></div>
       <div class="metric-card"><div class="metric-label">Ticket Promedio</div><div class="metric-value" id="kpi-ticket-prom">—</div></div>
     </div>
+
+    <div class="sec-title">🏢 Centro de Gastos de Admin</div>
+    <div class="table-card">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Concepto</th>
+              <th>2025</th>
+              <th>Presupuesto</th>
+              <th>Variación</th>
+              <th>2026</th>
+            </tr>
+          </thead>
+          <tbody id="gastos-admin-table">
+            <tr><td colspan="5" class="empty">Cargando datos...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -509,6 +529,33 @@ async function loadSheets(){
         hKPI+='<tr><td>'+nombre+'</td><td>'+meta+'</td><td style="color:var(--green)">'+verde+'</td><td style="color:var(--yellow)">'+amarillo+'</td><td style="color:var(--red)">'+rojo+'</td><td>'+actual+'</td><td>'+unidad+'</td><td><span class="sem '+sem2+'" title="'+semTxt+'"></span></td></tr>';
       });
       tbKPI.innerHTML=hKPI||'<tr><td colspan="8" class="empty">Sin KPIs</td></tr>';
+    }
+
+    // Centro de Gastos de Admin — leer filas 35, 36 y 37 del Resumen
+    // (la primera fila del array es la fila 2 del Sheet, porque la 1 es header)
+    try{
+      var tbGA=g('gastos-admin-table');
+      var conceptos=['Gastos de Operación','Gasto de servicios MTTO','Gastos generales de admin'];
+      var htmlGA='';
+      conceptos.forEach(function(concepto){
+        // Buscar la fila por nombre del concepto
+        var fila=null;
+        resRows.forEach(function(r){
+          var lbl=String(r[Object.keys(r)[0]]||'').trim();
+          if(lbl===concepto)fila=r;
+        });
+        var keys=fila?Object.keys(fila):[];
+        var v2025=fila?(parseFloat(fila[keys[1]]||0)||0):0;
+        var vPres=fila?(parseFloat(fila[keys[2]]||0)||0):0;
+        var vVar=fila?(parseFloat(fila[keys[3]]||0)||0):0;
+        var v2026=fila?(parseFloat(fila[keys[4]]||0)||0):0;
+        var fmtCell=function(v){return v===0?'—':fmt(v);};
+        htmlGA+='<tr><td><strong>'+concepto+'</strong></td><td>'+fmtCell(v2025)+'</td><td>'+fmtCell(vPres)+'</td><td>'+fmtCell(vVar)+'</td><td>'+fmtCell(v2026)+'</td></tr>';
+      });
+      tbGA.innerHTML=htmlGA||'<tr><td colspan="5" class="empty">Sin datos de gastos</td></tr>';
+    }catch(eGA){
+      console.error('Error gastos admin:',eGA);
+      g('gastos-admin-table').innerHTML='<tr><td colspan="5" class="empty">Error al cargar gastos</td></tr>';
     }
 
     g('sheets-last-update').textContent='Actualizado: '+new Date().toLocaleString('es-MX');
