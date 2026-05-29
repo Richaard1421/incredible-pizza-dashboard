@@ -4,8 +4,8 @@ const path = require('path');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const API_HOST = 'dev.sacoacard.com';
-const API_PORT = 33033;
+const API_HOST = '189.206.185.197';
+const API_PORT = 33001;
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));

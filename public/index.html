@@ -166,11 +166,11 @@
       <div class="config-title">⚙️ Conexión a la API de Sacoa</div>
       <div class="config-grid">
         <div class="field"><label>URL base</label><input type="text" id="cfg-url" value="/api"></div>
-        <div class="field"><label>Usuario</label><input type="text" id="cfg-user" value="aspeldev"></div>
-        <div class="field"><label>Contraseña</label><input type="password" id="cfg-pass" value="Sacoa2025@"></div>
+        <div class="field"><label>Usuario</label><input type="text" id="cfg-user" value="IPCMonterrey"></div>
+        <div class="field"><label>Contraseña</label><input type="password" id="cfg-pass" value="1pcM0nt3rr3y#"></div>
         <div class="field"><label>POS ID</label><input type="number" id="cfg-pos" value="1"></div>
         <div class="field"><label>Empleado ID</label><input type="number" id="cfg-emp" value="1"></div>
-        <div class="field"><label>Computer ID</label><input type="number" id="cfg-comp" value="1"></div>
+        <div class="field"><label>Computer ID</label><input type="number" id="cfg-comp" value="11"></div>
       </div>
       <div style="margin-top:14px"><button class="btn btn-primary" onclick="testConnection()">🔌 Probar conexión</button></div>
       <div id="msg-config" style="margin-top:12px"></div>
@@ -268,7 +268,7 @@
 </div>
 
 <script>
-var authToken=null,authTokenJWT=null;
+var authToken=null,authTokenJWT=null,authEmpId=1;
 var chartVD=null,chartVT=null,chartJD=null,chartCT=null;
 var SHEET_ID='1RsLPQerkU_Oe38shlxQeM5H07r410pWKiE7woQ58fd8';
 var META_MES=0;
@@ -302,15 +302,29 @@ async function apiPost(ep,body){
 
 async function doLogin(){
   try{
-    var d=await apiPost('/login',{user:cfg('user'),password:cfg('pass'),posId:parseInt(cfg('pos')),empId:parseInt(cfg('emp'))});
+    // Formato API real (confirmado por Alfonso): {user, pass, computerId}
+    var d=await apiPost('/login',{user:cfg('user'),pass:cfg('pass'),computerId:cfg('comp')});
+    console.log('[Login] respuesta:',d);
+    // La API devuelve: {statusCode:200, body:{authorized:true, token:"...", empId:N}}
+    if(d.statusCode===200&&d.body&&d.body.authorized===true&&d.body.token){
+      authToken=d.body.token;
+      authTokenJWT=d.body.token;
+      authEmpId=parseInt(d.body.empId)||1;
+      g('info-token').textContent='Sí';setConn(true,'Conectado');
+      console.log('[Login] OK — empId:',authEmpId);
+      return true;
+    }
+    // Fallback al formato viejo por si Sacoa devuelve estructura distinta
     if(d.statusCode===200&&d.body&&d.body.data){
       var dat=d.body.data;
       authToken=(dat.apiSession&&dat.apiSession.token)||dat.token;
       authTokenJWT=dat.token||authToken;
+      authEmpId=parseInt(dat.empId)||1;
       if(authToken){g('info-token').textContent='Sí';setConn(true,'Conectado');return true;}
     }
+    console.warn('[Login] respuesta inesperada',d);
     setConn(false,'Error login');return false;
-  }catch(e){setConn(false,'Sin conexión');return false;}
+  }catch(e){console.error('[Login] excepción',e);setConn(false,'Sin conexión');return false;}
 }
 
 function getRange(){
@@ -320,32 +334,128 @@ function getRange(){
 
 async function loadAll(){
   var btn=g('btn-load');btn.disabled=true;btn.textContent='⏳ Cargando...';
+  // REFRESH SIN ACUMULAR — vaciar arrays antes de consultar
+  allRoamingTxs=[];allGameTxs=[];
   var ok=await doLogin();
   if(!ok){showMsg('msg-ventas','err','❌ Sin conexión. Revisa ⚙️ Configuración.');btn.disabled=false;btn.textContent='🔄 Consultar';return;}
-  var pos=parseInt(cfg('pos')),emp=parseInt(cfg('emp')),comp=parseInt(cfg('comp'));
+  // Usar empId devuelto por el login (no el del input)
+  var emp=authEmpId,pos=parseInt(cfg('pos')),comp=parseInt(cfg('comp'));
   var rx=getRange();
   var fromStr=rx.from+' 00:00:00',toStr=rx.to+' 23:59:59';
+  console.log('[loadAll] empId:',emp,'rango:',fromStr,'→',toStr);
+
+  // === VENTAS ===
+  // Estrategia: leer body.payments — es el "Detalle de Pagos" que muestra el reporte oficial de POS
+  // Cada elemento es una FORMA DE PAGO (Pesos, Tj Crédito, Transferencia, etc.) con su total
   try{
-    var rdS=await apiPost('/dcsReports/sales',{posId:pos,empId:emp,token:authTokenJWT,extEmpId:emp,range:{from:fromStr,to:toStr}});
+    var payloadV={posId:pos,empId:emp,extEmpId:emp,token:authToken,range:{from:fromStr,to:toStr}};
+    console.log('[Ventas] payload:',payloadV);
+    var rdS=await apiPost('/dcsReports/sales',payloadV);
+    console.log('[Ventas] respuesta:',rdS);
     if(rdS.statusCode===200&&rdS.body){
       var sales=rdS.body,txs=[];
-      if(sales.byPosition){sales.byPosition.forEach(function(p,i){txs.push({ID:i+1,DateTime:rx.from+'T12:00:00Z',CardNumber:'—',StoreID:p.POSDescription||'—',TransTypeID:1,Amount:p.Amount||0});});}
-      else if(sales.payments){sales.payments.forEach(function(p,i){txs.push({ID:i+1,DateTime:rx.from+'T12:00:00Z',CardNumber:'—',StoreID:p.PaymentName||'—',TransTypeID:1,Amount:p.Total||0});});}
-      renderVentas(txs);
-      showMsg('msg-ventas','ok','✅ Datos del '+rx.from+' al '+rx.to);
-    }else{showMsg('msg-ventas','err','❌ Sin datos en ese período');}
-  }catch(e){showMsg('msg-ventas','err','❌ Error: '+e.message);}
+      if(sales.payments&&Array.isArray(sales.payments)){
+        // Log del primer payment para diagnóstico (ver qué campos tiene)
+        if(sales.payments.length>0)console.log('[Ventas] estructura primer payment:',sales.payments[0]);
+        // Cada payment es: {PaymentName, Local, Online, Total, ...}
+        sales.payments.forEach(function(p,i){
+          // Probar varios nombres posibles del campo total
+          var local=parseFloat(p.Local)||parseFloat(p.LocalAmount)||parseFloat(p.Cash)||0;
+          var online=parseFloat(p.Online)||parseFloat(p.OnlineAmount)||0;
+          var total=parseFloat(p.Total)||parseFloat(p.TotalAmount)||parseFloat(p.Amount)||0;
+          // Si Total no viene, usar Local+Online; si Total viene pero es menor que Local+Online, usar la suma
+          var monto=total>0?Math.max(total,local+online):(local+online);
+          if(monto===0)return;
+          txs.push({
+            ID:i+1,
+            DateTime:rx.from+'T12:00:00Z',
+            CardNumber:'—',
+            StoreID:p.PaymentName||p.PaymentDescription||'—',
+            TransTypeID:1,
+            Amount:monto
+          });
+        });
+      }
+      allRoamingTxs=txs;
+      if(txs.length>0){
+        var totalReal=txs.reduce(function(s,t){return s+(t.Amount||0);},0);
+        renderVentas(txs);
+        showMsg('msg-ventas','ok','✅ '+txs.length+' formas de pago · Total: $'+totalReal.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2}));
+      }else{showMsg('msg-ventas','err','❌ Sin datos de pagos en ese período');}
+    }else{showMsg('msg-ventas','err','❌ Sin datos en ese período. ('+((rdS.body&&rdS.body.msg)||'sin detalle')+')');}
+  }catch(e){console.error('[Ventas] error',e);showMsg('msg-ventas','err','❌ Error: '+e.message);}
+
+  // === JUEGOS ===
+  // Estrategia: pedir día por día y agregar (como hace Alfonso). Evita timeout.
   try{
-    var gdR=await apiPost('/dcsReports/gamesActivity',{posId:pos,empId:emp,token:authTokenJWT,extEmpId:emp,range:{from:fromStr,to:toStr}});
-    if(gdR.statusCode===200&&gdR.body&&gdR.body.data&&gdR.body.data.length>0){
-      renderJuegosReporte(gdR.body.data,rx.from,rx.to);
-      showMsg('msg-juegos','ok','✅ '+gdR.body.data.length+' juegos del '+rx.from+' al '+rx.to);
-    }else{showMsg('msg-juegos','err','❌ Sin datos de juegos');}
-  }catch(e){showMsg('msg-juegos','err','❌ Error: '+e.message);}
+    showMsg('msg-juegos','info','🔄 Cargando juegos día por día...');
+    var dias=[];
+    var dCurr=new Date(rx.from+'T00:00:00');
+    var dEnd=new Date(rx.to+'T00:00:00');
+    while(dCurr<=dEnd){
+      dias.push(dCurr.toISOString().split('T')[0]);
+      dCurr.setDate(dCurr.getDate()+1);
+    }
+    console.log('[Juegos] consultando',dias.length,'días');
+    var todosJuegos={}; // agregamos por GameID
+    var diasOk=0,diasError=0;
+    for(var di=0;di<dias.length;di++){
+      var d=dias[di];
+      var pd={posId:pos,empId:emp,extEmpId:emp,token:authToken,range:{from:d+' 00:00:00',to:d+' 23:59:59'}};
+      try{
+        var gdR=await apiPost('/dcsReports/gamesActivity',pd);
+        var arr=null;
+        if(gdR.statusCode===200&&gdR.body){
+          if(gdR.body.payLoad&&gdR.body.payLoad.data&&Array.isArray(gdR.body.payLoad.data))arr=gdR.body.payLoad.data;
+          else if(gdR.body.data&&Array.isArray(gdR.body.data))arr=gdR.body.data;
+        }
+        if(arr&&arr.length>0){
+          diasOk++;
+          arr.forEach(function(j){
+            var gid=j.GameID;
+            if(!todosJuegos[gid]){
+              todosJuegos[gid]={GameID:gid,GameName:j.GameName,GroupName:j.GroupName,TotalPlays:0,Collection:0,CreditPlays:0,CourtesyPlays:0,Tickets:0,Time:0};
+            }
+            todosJuegos[gid].TotalPlays+=parseFloat(j.TotalPlays)||0;
+            todosJuegos[gid].Collection+=parseFloat(j.Collection)||0;
+            todosJuegos[gid].CreditPlays+=parseFloat(j.CreditPlays)||0;
+            todosJuegos[gid].CourtesyPlays+=parseFloat(j.CourtesyPlays)||0;
+            todosJuegos[gid].Tickets+=parseFloat(j.Tickets)||0;
+            todosJuegos[gid].Time+=parseFloat(j.Time)||0;
+          });
+        }else{diasError++;}
+      }catch(eDia){console.warn('[Juegos] día',d,'error',eDia);diasError++;}
+    }
+    var juegosArr=Object.values(todosJuegos);
+    console.log('[Juegos] consolidado:',juegosArr.length,'juegos · días OK:',diasOk,'· errores:',diasError);
+    if(juegosArr.length>0){
+      allGameTxs=juegosArr;
+      renderJuegosReporte(juegosArr,rx.from,rx.to);
+      showMsg('msg-juegos','ok','✅ '+juegosArr.length+' juegos · '+diasOk+'/'+dias.length+' días cargados');
+    }else{showMsg('msg-juegos','err','❌ Sin datos de juegos en ningún día del período');}
+  }catch(e){console.error('[Juegos] error',e);showMsg('msg-juegos','err','❌ Error: '+e.message);}
+
+  // === REDENCIÓN ===
+  // El endpoint actual devuelve "Auth Denied" en este servidor.
+  // Probablemente este servidor de Sacoa no expone este reporte o requiere otro token.
+  // Pendiente: confirmar con Alfonso el endpoint correcto para esta sucursal.
   try{
-    var red=await apiPost('/reports/redemption/itemsRedeemed',{token:authToken,empId:emp,computerId:String(comp),from:rx.from,to:rx.to,providerId:1});
-    if(red.statusCode===200)renderRedencion(red.body.payLoad||[]);
-  }catch(e){}
+    var payloadR={token:authToken,empId:emp,computerId:String(comp),from:rx.from,to:rx.to,providerId:1};
+    console.log('[Redención] payload:',payloadR);
+    var red=await apiPost('/reports/redemption/itemsRedeemed',payloadR);
+    console.log('[Redención] respuesta:',red);
+    if(red.statusCode===200&&red.body){
+      var items=red.body.payLoad||red.body.data||[];
+      if(items.length>0){renderRedencion(items);showMsg('msg-red','ok','✅ '+items.length+' artículos cargados');}
+      else{renderRedencion([]);showMsg('msg-red','err','❌ Sin datos de redención en ese período');}
+    }else{
+      // Auth Denied u otro error — mostrar mensaje pero NO romper el resto
+      renderRedencion([]);
+      var detail=(red.body&&red.body.body)||'endpoint no disponible';
+      showMsg('msg-red','err','⚠️ Redención no disponible: '+detail+' (pendiente confirmar endpoint con Alfonso)');
+    }
+  }catch(e){console.error('[Redención] error',e);showMsg('msg-red','err','❌ Error: '+e.message);}
+
   g('info-fetch').textContent=new Date().toLocaleString('es-MX');
   btn.disabled=false;btn.textContent='🔄 Consultar';
 }
