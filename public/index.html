@@ -110,17 +110,17 @@
     <div id="msg-ventas"></div>
     <div class="metrics-grid">
       <div class="metric-card"><div class="metric-label">Total ventas</div><div class="metric-value" id="v-total">—</div><div class="metric-sub">en el período</div></div>
-      <div class="metric-card"><div class="metric-label">Transacciones</div><div class="metric-value" id="v-trans">—</div><div class="metric-sub">registradas</div></div>
-      <div class="metric-card"><div class="metric-label">Promedio por tx</div><div class="metric-value" id="v-avg">—</div><div class="metric-sub">monto promedio</div></div>
-      <div class="metric-card"><div class="metric-label">Día pico</div><div class="metric-value" style="font-size:16px" id="v-peak">—</div><div class="metric-sub">más ventas</div></div>
+      <div class="metric-card"><div class="metric-label">Transacciones</div><div class="metric-value" id="v-trans">—</div><div class="metric-sub">tickets emitidos</div></div>
+      <div class="metric-card"><div class="metric-label">Ticket promedio</div><div class="metric-value" id="v-avg">—</div><div class="metric-sub">venta ÷ transacciones</div></div>
+      <div class="metric-card"><div class="metric-label">Top forma de pago</div><div class="metric-value" style="font-size:14px" id="v-peak">—</div><div class="metric-sub">mayor monto</div></div>
     </div>
     <div class="charts-grid">
-      <div class="chart-card"><div class="chart-title">Ventas por día</div><div class="chart-wrap"><canvas id="chart-ventas-dia"></canvas></div></div>
-      <div class="chart-card"><div class="chart-title">Tipo de transacción</div><div class="chart-wrap"><canvas id="chart-ventas-tipo"></canvas></div></div>
+      <div class="chart-card"><div class="chart-title">Total del período</div><div class="chart-wrap"><canvas id="chart-ventas-dia"></canvas></div></div>
+      <div class="chart-card"><div class="chart-title">Desglose por categoría de pago</div><div class="chart-wrap"><canvas id="chart-ventas-tipo"></canvas></div></div>
     </div>
     <div class="table-card">
       <div class="table-header"><span>Últimas transacciones</span><span id="v-count" style="font-size:11px;color:var(--muted)"></span></div>
-      <div class="table-wrap"><table><thead><tr><th>ID</th><th>Fecha/Hora</th><th>Tarjeta</th><th>Tienda</th><th>Tipo</th><th>Monto</th><th>Estado</th></tr></thead><tbody id="v-table"><tr><td colspan="7" class="empty">Haz clic en 📊 Demo para ver datos</td></tr></tbody></table></div>
+      <div class="table-wrap"><table><thead><tr><th>#</th><th>Período</th><th>Forma de pago</th><th>%</th><th>Monto</th><th>Estado</th></tr></thead><tbody id="v-table"><tr><td colspan="6" class="empty">Haz clic en 📊 Demo para ver datos</td></tr></tbody></table></div>
     </div>
   </div>
 
@@ -336,6 +336,8 @@ async function loadAll(){
   var btn=g('btn-load');btn.disabled=true;btn.textContent='⏳ Cargando...';
   // REFRESH SIN ACUMULAR — vaciar arrays antes de consultar
   allRoamingTxs=[];allGameTxs=[];
+  // Limpiar mensajes anteriores para que no queden 'pegados' de consultas previas
+  ['msg-ventas','msg-juegos','msg-red'].forEach(function(id){var el=g(id);if(el)el.innerHTML='';});
   var ok=await doLogin();
   if(!ok){showMsg('msg-ventas','err','❌ Sin conexión. Revisa ⚙️ Configuración.');btn.disabled=false;btn.textContent='🔄 Consultar';return;}
   // Usar empId devuelto por el login (no el del input)
@@ -346,41 +348,55 @@ async function loadAll(){
 
   // === VENTAS ===
   // Estrategia: leer body.payments — es el "Detalle de Pagos" que muestra el reporte oficial de POS
-  // Cada elemento es una FORMA DE PAGO (Pesos, Tj Crédito, Transferencia, etc.) con su total
+  // IMPORTANTE: NO sumar payments con ISNonEffectiveAmount===1 (son duplicados ya contados en otras formas)
   try{
     var payloadV={posId:pos,empId:emp,extEmpId:emp,token:authToken,range:{from:fromStr,to:toStr}};
     console.log('[Ventas] payload:',payloadV);
     var rdS=await apiPost('/dcsReports/sales',payloadV);
     console.log('[Ventas] respuesta:',rdS);
     if(rdS.statusCode===200&&rdS.body){
-      var sales=rdS.body,txs=[];
+      var sales=rdS.body,txs=[],txsInfo=[];
+      // Capturar el # de transacciones reales (byPosition tiene una fila por transacción)
+      var numTransacciones=sales.byPosition&&Array.isArray(sales.byPosition)?sales.byPosition.length:0;
+      var numProductos=sales.products&&Array.isArray(sales.products)?sales.products.length:0;
+      var numCajeros=sales.cashiersBreakdown&&Array.isArray(sales.cashiersBreakdown)?sales.cashiersBreakdown.length:0;
+      console.log('[Ventas] byPosition (transacciones reales):',numTransacciones,'· products:',numProductos,'· cajeros:',numCajeros);
       if(sales.payments&&Array.isArray(sales.payments)){
-        // Log del primer payment para diagnóstico (ver qué campos tiene)
+        // Log para diagnóstico
         if(sales.payments.length>0)console.log('[Ventas] estructura primer payment:',sales.payments[0]);
-        // Cada payment es: {PaymentName, Local, Online, Total, ...}
         sales.payments.forEach(function(p,i){
-          // Probar varios nombres posibles del campo total
-          var local=parseFloat(p.Local)||parseFloat(p.LocalAmount)||parseFloat(p.Cash)||0;
-          var online=parseFloat(p.Online)||parseFloat(p.OnlineAmount)||0;
-          var total=parseFloat(p.Total)||parseFloat(p.TotalAmount)||parseFloat(p.Amount)||0;
-          // Si Total no viene, usar Local+Online; si Total viene pero es menor que Local+Online, usar la suma
-          var monto=total>0?Math.max(total,local+online):(local+online);
+          var monto=parseFloat(p.Total)||0;
+          var esNoEfectivo=parseFloat(p.ISNonEffectiveAmount)===1;
           if(monto===0)return;
-          txs.push({
+          var fila={
             ID:i+1,
             DateTime:rx.from+'T12:00:00Z',
             CardNumber:'—',
-            StoreID:p.PaymentName||p.PaymentDescription||'—',
+            StoreID:p.PaymentName||'—',
             TransTypeID:1,
-            Amount:monto
-          });
+            Amount:monto,
+            esNoEfectivo:esNoEfectivo,
+            Percentage:parseFloat(p.Percentage)||0
+          };
+          if(esNoEfectivo){
+            // Va aparte (no suma al total) — informativo
+            txsInfo.push(fila);
+          }else{
+            // Suma al total real
+            txs.push(fila);
+          }
         });
       }
+      // Guardar el # de transacciones globalmente para renderVentas
+      window.salesNumTx=numTransacciones;
+      window.salesNumProd=numProductos;
+      window.salesNoEfectivos=txsInfo;
       allRoamingTxs=txs;
       if(txs.length>0){
         var totalReal=txs.reduce(function(s,t){return s+(t.Amount||0);},0);
         renderVentas(txs);
-        showMsg('msg-ventas','ok','✅ '+txs.length+' formas de pago · Total: $'+totalReal.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2}));
+        var msgExtra=txsInfo.length>0?' · '+txsInfo.length+' pagos no efectivos (informativos)':'';
+        showMsg('msg-ventas','ok','✅ '+txs.length+' formas de pago · '+numTransacciones+' transacciones · Total: $'+totalReal.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2})+msgExtra);
       }else{showMsg('msg-ventas','err','❌ Sin datos de pagos en ese período');}
     }else{showMsg('msg-ventas','err','❌ Sin datos en ese período. ('+((rdS.body&&rdS.body.msg)||'sin detalle')+')');}
   }catch(e){console.error('[Ventas] error',e);showMsg('msg-ventas','err','❌ Error: '+e.message);}
@@ -717,24 +733,51 @@ async function loadSheets(){
 
 function renderVentas(txs){
   var total=txs.reduce(function(s,t){return s+(t.Amount||0);},0);
-  var avg=txs.length?total/txs.length:0;
-  var byDay={};txs.forEach(function(t){var d=(t.DateTime||'').split('T')[0];byDay[d]=(byDay[d]||0)+(t.Amount||0);});
-  var days=Object.keys(byDay).sort();
-  var peak=Object.entries(byDay).sort(function(a,b){return b[1]-a[1];})[0];
+  // Usar # transacciones REAL de byPosition (no formas de pago)
+  var numTx=window.salesNumTx||0;
+  var ticketProm=numTx>0?total/numTx:0;
+  // Obtener rango de fechas seleccionado
+  var rx=getRange();
+  var periodoTexto=rx.from===rx.to?rx.from:(rx.from+' a '+rx.to);
+  // Top forma de pago: la que tiene mayor monto
+  var peak=txs.slice().sort(function(a,b){return (b.Amount||0)-(a.Amount||0);})[0];
   g('v-total').textContent='$'+total.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2});
-  g('v-trans').textContent=txs.length.toLocaleString();
-  g('v-avg').textContent='$'+avg.toFixed(2);
-  g('v-peak').textContent=peak?peak[0]:'—';
-  g('v-count').textContent=txs.length+' registros';
+  g('v-trans').textContent=numTx.toLocaleString();
+  g('v-avg').textContent='$'+ticketProm.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2});
+  g('v-peak').textContent=peak?(peak.StoreID||'—'):'—';
+  g('v-count').textContent=txs.length+' formas de pago · '+numTx+' transacciones';
+
+  // === GRÁFICA 1: Ventas por día (1 sola barra con el período) ===
   if(chartVD)chartVD.destroy();
-  chartVD=new Chart(g('chart-ventas-dia'),{type:'bar',data:{labels:days,datasets:[{label:'$',data:days.map(function(d){return +byDay[d].toFixed(2);}),backgroundColor:'#D85A30',borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#888',maxRotation:45,font:{size:10}}},y:{ticks:{color:'#888',callback:function(v){return '$'+v;}},grid:{color:'#2e2e2e'}}}}});
-  var byType={};txs.forEach(function(t){var k='Tipo '+t.TransTypeID;byType[k]=(byType[k]||0)+1;});
-  var types=Object.keys(byType);
+  chartVD=new Chart(g('chart-ventas-dia'),{type:'bar',data:{labels:[periodoTexto],datasets:[{label:'Total',data:[+total.toFixed(2)],backgroundColor:'#D85A30',borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#888',font:{size:11}}},y:{ticks:{color:'#888',callback:function(v){return '$'+v.toLocaleString('es-MX');}},grid:{color:'#2e2e2e'}}}}});
+
+  // === GRÁFICA 2: Desglose por CATEGORÍA de forma de pago (Pesos/Crédito/Débito/Transferencia/Otros) ===
+  var categorizar=function(nombre){
+    var n=String(nombre||'').toUpperCase();
+    if(n.indexOf('PESOS')>=0||n.indexOf('EFECTIVO')>=0||n.indexOf('CASH')>=0)return 'Efectivo (Pesos)';
+    if(n.indexOf('TRANSFER')>=0)return 'Transferencia';
+    if(n.indexOf('DEBIT')>=0||n.indexOf('TJ. DEB')>=0||n.indexOf('TJ DEB')>=0)return 'Tarjeta Débito';
+    if(n.indexOf('CREDIT')>=0||n.indexOf('TJ. CRED')>=0||n.indexOf('TJ CRED')>=0)return 'Tarjeta Crédito';
+    if(n.indexOf('VOUCHER')>=0||n.indexOf('VALE')>=0||n.indexOf('CUPON')>=0||n.indexOf('CUPÓN')>=0)return 'Vouchers/Vales';
+    if(n.indexOf('CHEQUE')>=0)return 'Cheque';
+    if(n.indexOf('PLAYCARD')>=0||n.indexOf('TARJETA SACOA')>=0)return 'Playcard';
+    return 'Otros';
+  };
+  var byCat={};txs.forEach(function(t){var k=categorizar(t.StoreID);byCat[k]=(byCat[k]||0)+(t.Amount||0);});
+  var cats=Object.keys(byCat).filter(function(k){return byCat[k]>0;});
+  var colores=['#D85A30','#4ade80','#60a5fa','#facc15','#f87171','#a78bfa','#fb923c','#34d399'];
   if(chartVT)chartVT.destroy();
-  chartVT=new Chart(g('chart-ventas-tipo'),{type:'doughnut',data:{labels:types,datasets:[{data:types.map(function(k){return byType[k];}),backgroundColor:['#D85A30','#4ade80','#60a5fa','#facc15','#f87171']}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{color:'#888',font:{size:11},boxWidth:12}}}}});
+  chartVT=new Chart(g('chart-ventas-tipo'),{type:'doughnut',data:{labels:cats,datasets:[{data:cats.map(function(k){return +byCat[k].toFixed(2);}),backgroundColor:colores}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{color:'#888',font:{size:11},boxWidth:12}},tooltip:{callbacks:{label:function(ctx){var v=ctx.parsed||0;var pct=total>0?(v/total*100).toFixed(1):0;return ctx.label+': $'+v.toLocaleString('es-MX',{minimumFractionDigits:2})+' ('+pct+'%)';}}}}}});
+
+  // === TABLA: Forma de pago, % del total, Monto ===
   var tb=g('v-table');
-  if(!txs.length){tb.innerHTML='<tr><td colspan="7" class="empty">Sin datos</td></tr>';return;}
-  tb.innerHTML=txs.slice(0,50).map(function(t){var a=t.Amount||0;return'<tr><td>'+(t.ID||'')+'</td><td>'+(t.DateTime||'').replace('T',' ').split('.')[0]+'</td><td>'+(t.CardNumber||'—')+'</td><td>'+(t.StoreID||'—')+'</td><td><span class="badge badge-blue">Tipo '+(t.TransTypeID||'?')+'</span></td><td style="color:'+(a>=0?'#4ade80':'#f87171')+'">$'+a.toFixed(2)+'</td><td><span class="badge '+(a>=0?'badge-green':'badge-red')+'">'+(a>=0?'OK':'Débito')+'</span></td></tr>';}).join('');
+  if(!txs.length){tb.innerHTML='<tr><td colspan="6" class="empty">Sin datos</td></tr>';return;}
+  var sorted=txs.slice().sort(function(a,b){return (b.Amount||0)-(a.Amount||0);});
+  tb.innerHTML=sorted.map(function(t,i){
+    var a=t.Amount||0;
+    var pct=total>0?(a/total*100).toFixed(1):'0.0';
+    return '<tr><td>'+(i+1)+'</td><td>'+periodoTexto+'</td><td><strong>'+(t.StoreID||'—')+'</strong></td><td>'+pct+'%</td><td style="color:'+(a>=0?'#4ade80':'#f87171')+'">$'+a.toLocaleString('es-MX',{minimumFractionDigits:2})+'</td><td><span class="badge '+(a>=0?'badge-green':'badge-red')+'">'+(a>=0?'OK':'Débito')+'</span></td></tr>';
+  }).join('');
 }
 
 function renderJuegosReporte(games,fromDate,toDate){
