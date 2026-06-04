@@ -416,6 +416,50 @@ async function loadAll(){
       window.salesNumProd=numProductos;
       window.salesNoEfectivos=txsInfo;
       allRoamingTxs=txs;
+
+      // === VENTAS POR DÍA (para gráfica de barras del período) ===
+      // Si el rango tiene más de 1 día, consultar día por día para tener desglose en gráfica
+      window.ventasPorDia={};
+      if(txs.length>0){
+        // Calcular días del rango
+        var diasV=[];
+        var dStartV=new Date(rx.from+'T00:00:00');
+        var dEndV=new Date(rx.to+'T00:00:00');
+        while(dStartV<=dEndV){
+          diasV.push(dStartV.toISOString().slice(0,10));
+          dStartV.setDate(dStartV.getDate()+1);
+        }
+        if(diasV.length===1){
+          // Un solo día — usar el total que ya tenemos
+          var totalUnDia=txs.reduce(function(s,t){return s+(t.Amount||0);},0);
+          window.ventasPorDia[diasV[0]]=totalUnDia;
+        }else if(diasV.length<=31){
+          // Hasta 31 días — pedir uno por uno
+          console.log('[Ventas] consultando',diasV.length,'días para gráfica');
+          for(var iv=0;iv<diasV.length;iv++){
+            var dV=diasV[iv];
+            try{
+              var payloadVD={posId:pos,empId:emp,extEmpId:emp,token:authToken,range:{from:dV+' 00:00:00',to:dV+' 23:59:59'}};
+              var rdVD=await apiPost('/dcsReports/sales',payloadVD);
+              var totDia=0;
+              if(rdVD.statusCode===200&&rdVD.body&&rdVD.body.payments){
+                rdVD.body.payments.forEach(function(p){
+                  if(parseFloat(p.ISNonEffectiveAmount)!==1){
+                    totDia+=parseFloat(p.Total)||0;
+                  }
+                });
+              }
+              window.ventasPorDia[dV]=totDia;
+            }catch(eVD){console.warn('[Ventas] día',dV,'error',eVD);window.ventasPorDia[dV]=0;}
+          }
+          console.log('[Ventas] desglose por día:',window.ventasPorDia);
+        }else{
+          // Más de 31 días — solo muestra total como una barra
+          var totalLargoPlazo=txs.reduce(function(s,t){return s+(t.Amount||0);},0);
+          window.ventasPorDia['rango_'+rx.from+'_'+rx.to]=totalLargoPlazo;
+        }
+      }
+
       if(txs.length>0){
         var totalReal=txs.reduce(function(s,t){return s+(t.Amount||0);},0);
         renderVentas(txs);
@@ -829,9 +873,19 @@ function renderVentas(txs){
   g('v-peak').textContent=peak?(peak.StoreID||'—'):'—';
   g('v-count').textContent=txs.length+' formas de pago · '+numTx+' transacciones';
 
-  // === GRÁFICA 1: Ventas por día (1 sola barra con el período) ===
+  // === GRÁFICA 1: Ventas por día ===
+  // Si hay desglose por día (window.ventasPorDia), graficar una barra por día.
+  // Si solo hay un día o no hay desglose, graficar una sola barra con el total.
+  var labelsDia=[],dataDia=[];
+  if(window.ventasPorDia&&Object.keys(window.ventasPorDia).length>1){
+    var keysDia=Object.keys(window.ventasPorDia).sort();
+    keysDia.forEach(function(k){labelsDia.push(k);dataDia.push(+(window.ventasPorDia[k]||0).toFixed(2));});
+  }else{
+    labelsDia=[periodoTexto];
+    dataDia=[+total.toFixed(2)];
+  }
   if(chartVD)chartVD.destroy();
-  chartVD=new Chart(g('chart-ventas-dia'),{type:'bar',data:{labels:[periodoTexto],datasets:[{label:'Total',data:[+total.toFixed(2)],backgroundColor:'#D85A30',borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#888',font:{size:11}}},y:{ticks:{color:'#888',callback:function(v){return '$'+v.toLocaleString('es-MX');}},grid:{color:'#2e2e2e'}}}}});
+  chartVD=new Chart(g('chart-ventas-dia'),{type:'bar',data:{labels:labelsDia,datasets:[{label:'Total',data:dataDia,backgroundColor:'#D85A30',borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(ctx){return '$'+(ctx.parsed.y||0).toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2});}}}},scales:{x:{ticks:{color:'#888',font:{size:10},maxRotation:45}},y:{ticks:{color:'#888',callback:function(v){return '$'+v.toLocaleString('es-MX');}},grid:{color:'#2e2e2e'}}}}});
 
   // === GRÁFICA 2: Desglose por CATEGORÍA de forma de pago (Pesos/Crédito/Débito/Transferencia/Otros) ===
   var categorizar=function(nombre){
