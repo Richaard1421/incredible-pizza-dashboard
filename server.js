@@ -62,6 +62,7 @@ app.post('/api/dcsReports/gamesActivity', proxyPost);
 app.post('/api/dcsReports/gamesActivityByGroup', proxyPost);
 app.post('/api/dcsReports/sales', proxyPost);
 app.post('/api/dcsReports/salesDetails', proxyPost);
+app.post('/api/dcsReports/OnlineSales', proxyPost);
 
 app.get('/sheets/:sheetId', function(req, res) {
   var sheetId = req.params.sheetId;

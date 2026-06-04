@@ -118,8 +118,29 @@
       <div class="chart-card"><div class="chart-title">Total del período</div><div class="chart-wrap"><canvas id="chart-ventas-dia"></canvas></div></div>
       <div class="chart-card"><div class="chart-title">Desglose por categoría de pago</div><div class="chart-wrap"><canvas id="chart-ventas-tipo"></canvas></div></div>
     </div>
+
+    <!-- VENTAS POR GRUPO DE PRODUCTO -->
+    <div class="chart-card" style="margin-bottom:20px">
+      <div class="chart-title">📦 Ventas × grupo de producto</div>
+      <div id="v-grupos-cards" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-top:12px">
+        <div class="empty">Sin datos</div>
+      </div>
+    </div>
+
+    <!-- TOP PRODUCTOS VENDIDOS -->
     <div class="table-card">
-      <div class="table-header"><span>Últimas transacciones</span><span id="v-count" style="font-size:11px;color:var(--muted)"></span></div>
+      <div class="table-header">
+        <span>🛒 Productos vendidos · <span id="v-prod-count" style="color:var(--muted);font-weight:normal">—</span></span>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-secondary" id="btn-prod-csv" onclick="descargarProductosCSV()" style="font-size:11px">↓ CSV</button>
+          <button class="btn btn-secondary" id="btn-prod-toggle" onclick="toggleProductos()" style="font-size:11px">Ver todos</button>
+        </div>
+      </div>
+      <div class="table-wrap"><table><thead><tr><th>#</th><th>Producto</th><th>Grupo</th><th style="text-align:right">Unidades</th><th style="text-align:right">Ventas</th></tr></thead><tbody id="v-prod-table"><tr><td colspan="5" class="empty">Sin datos</td></tr></tbody></table></div>
+    </div>
+
+    <div class="table-card">
+      <div class="table-header"><span>💳 Detalle de formas de pago</span><span id="v-count" style="font-size:11px;color:var(--muted)"></span></div>
       <div class="table-wrap"><table><thead><tr><th>#</th><th>Período</th><th>Forma de pago</th><th>%</th><th>Monto</th><th>Estado</th></tr></thead><tbody id="v-table"><tr><td colspan="6" class="empty">Haz clic en 📊 Demo para ver datos</td></tr></tbody></table></div>
     </div>
   </div>
@@ -361,6 +382,9 @@ async function loadAll(){
       var numProductos=sales.products&&Array.isArray(sales.products)?sales.products.length:0;
       var numCajeros=sales.cashiersBreakdown&&Array.isArray(sales.cashiersBreakdown)?sales.cashiersBreakdown.length:0;
       console.log('[Ventas] byPosition (transacciones reales):',numTransacciones,'· products:',numProductos,'· cajeros:',numCajeros);
+      // Guardar productos del POS para renderProductos
+      window.productosPOS=Array.isArray(sales.products)?sales.products:[];
+      if(window.productosPOS.length>0)console.log('[Ventas] ejemplo producto:',window.productosPOS[0]);
       if(sales.payments&&Array.isArray(sales.payments)){
         // Log para diagnóstico
         if(sales.payments.length>0)console.log('[Ventas] estructura primer payment:',sales.payments[0]);
@@ -400,6 +424,64 @@ async function loadAll(){
       }else{showMsg('msg-ventas','err','❌ Sin datos de pagos en ese período');}
     }else{showMsg('msg-ventas','err','❌ Sin datos en ese período. ('+((rdS.body&&rdS.body.msg)||'sin detalle')+')');}
   }catch(e){console.error('[Ventas] error',e);showMsg('msg-ventas','err','❌ Error: '+e.message);}
+
+  // === ONLINE SALES ===
+  // Endpoint /dcsReports/OnlineSales devuelve transacciones online con sus productos.
+  // Cada venta tiene: transactionId, paymentDate, creditCardName, products[]
+  // Cada producto tiene: productName, productCode, amountWithoutTaxes, taxAmount, productQuantity
+  window.productosOnline=[];
+  try{
+    var payloadOS={
+      computerId:String(comp),
+      empId:emp,
+      token:authToken,
+      range:{from:fromStr,to:toStr}
+    };
+    console.log('[OnlineSales] payload:',payloadOS);
+    var osR=await apiPost('/dcsReports/OnlineSales',payloadOS);
+    console.log('[OnlineSales] respuesta:',osR);
+    if(osR&&osR.statusCode===200&&osR.body){
+      var osData=null;
+      if(osR.body.payLoad&&osR.body.payLoad.data)osData=osR.body.payLoad.data;
+      else if(osR.body.data)osData=osR.body.data;
+      if(osData&&Array.isArray(osData)){
+        console.log('[OnlineSales] # ventas:',osData.length);
+        // Agregar productos online — agruparlos por nombre para consolidar
+        var prodMap={};
+        osData.forEach(function(sale){
+          if(sale.products&&Array.isArray(sale.products)){
+            sale.products.forEach(function(p){
+              var nombre=p.productName||p.ProductName||p.productCode||'Producto Online';
+              var codigo=p.productCode||p.ProductCode||'';
+              var amt=parseFloat(p.amountWithoutTaxes||p.AmountWithoutTaxes||0);
+              var tax=parseFloat(p.taxAmount||p.TaxAmount||0);
+              var qty=parseFloat(p.productQuantity||p.ProductQuantity||0);
+              var monto=amt+tax;
+              var key=codigo+'|'+nombre;
+              if(!prodMap[key]){
+                prodMap[key]={
+                  Description:nombre,
+                  ProductCode:codigo,
+                  GroupName:'Online Sales',
+                  Quantity:0,
+                  Amount:0,
+                  esOnline:true
+                };
+              }
+              prodMap[key].Quantity+=qty;
+              prodMap[key].Amount+=monto;
+            });
+          }
+        });
+        window.productosOnline=Object.values(prodMap);
+        var totalOS=window.productosOnline.reduce(function(s,p){return s+p.Amount;},0);
+        console.log('[OnlineSales] productos consolidados:',window.productosOnline.length,'· total: $'+totalOS.toLocaleString('es-MX',{minimumFractionDigits:2}));
+      }
+    }
+  }catch(eOS){console.error('[OnlineSales] error:',eOS);}
+
+  // Renderizar productos consolidados (POS + Online)
+  renderProductos();
 
   // === JUEGOS ===
   // Estrategia: pedir día por día y agregar (como hace Alfonso). Evita timeout.
@@ -802,6 +884,124 @@ function renderJuegosReporte(games,fromDate,toDate){
     tb.innerHTML=arr.map(function(gm,i){var rc=i===0?'rank-1':i===1?'rank-2':i===2?'rank-3':'rank-other';return'<tr><td><span class="rank-num '+rc+'">'+(i+1)+'</span></td><td>'+(gm.GameName||'—')+'</td><td>'+(gm.TotalPlays||0).toLocaleString()+'</td><td>$'+(gm.Collection||0).toFixed(2)+'</td></tr>';}).join('');}
   rr(sorted.slice(0,10),'top-mas');
   rr(sorted.slice().reverse().slice(0,10),'top-menos');
+}
+
+function renderProductos(){
+  // Combinar productos del POS (sales.products) + productos Online (window.productosOnline)
+  var pos=Array.isArray(window.productosPOS)?window.productosPOS:[];
+  var online=Array.isArray(window.productosOnline)?window.productosOnline:[];
+
+  // Normalizar productos POS al mismo formato
+  var todos=[];
+  pos.forEach(function(p){
+    var nombre=p.Description||p.ProductName||p.productName||p.Name||p.name||'Producto';
+    // Probar TODOS los nombres posibles del campo "Grupo" en la API
+    var grupo=p.GroupName||p.groupName||p.Group||p.group||p.Category||p.category||
+              p.GroupDescription||p.CategoryName||p.categoryName||p.ProductGroup||
+              p.productGroup||p.Section||p.section||p.Family||p.family||'Sin grupo';
+    var qty=parseFloat(p.Quantity||p.quantity||p.Units||p.units||p.ProductQuantity||0)||0;
+    var amt=parseFloat(p.Amount||p.amount||p.Total||p.total||p.GrossAmount||p.grossAmount||0)||0;
+    if(amt===0&&qty===0)return;
+    todos.push({Description:nombre,GroupName:grupo,Quantity:qty,Amount:amt,esOnline:false});
+  });
+  online.forEach(function(p){todos.push(p);});
+
+  // Ordenar por mayor venta
+  todos.sort(function(a,b){return (b.Amount||0)-(a.Amount||0);});
+
+  // Guardar lista completa globalmente para toggle
+  window.allProductos=todos;
+  window.productosExpanded=false;
+
+  // Resumen por grupo
+  var byGroup={};
+  todos.forEach(function(p){var g=p.GroupName||'Otro';if(!byGroup[g])byGroup[g]={qty:0,amt:0};byGroup[g].qty+=p.Quantity;byGroup[g].amt+=p.Amount;});
+  var grupos=Object.entries(byGroup).sort(function(a,b){return b[1].amt-a[1].amt;});
+  var totalGen=todos.reduce(function(s,p){return s+p.Amount;},0);
+
+  // Iconos por grupo
+  var iconoGrupo=function(nombre){
+    var n=String(nombre||'').toLowerCase();
+    if(n.indexOf('evento')>=0)return '🎉';
+    if(n.indexOf('frente')>=0)return '🍽️';
+    if(n.indexOf('online')>=0)return '🌐';
+    if(n.indexOf('ecommerce')>=0||n.indexOf('e-comm')>=0||n.indexOf('qr')>=0)return '📱';
+    if(n.indexOf('fairground')>=0||n.indexOf('arcade')>=0)return '🎮';
+    if(n.indexOf('togo')>=0||n.indexOf('to go')>=0||n.indexOf('pizza')>=0)return '🍕';
+    if(n.indexOf('redenc')>=0||n.indexOf('redem')>=0)return '🎁';
+    return '📦';
+  };
+
+  // Render tarjetas de grupo
+  var elGrupos=g('v-grupos-cards');
+  if(grupos.length===0){
+    elGrupos.innerHTML='<div class="empty">Sin datos de productos</div>';
+  }else{
+    elGrupos.innerHTML=grupos.map(function(e){
+      var nombre=e[0],datos=e[1];
+      var pct=totalGen>0?(datos.amt/totalGen*100).toFixed(1):'0.0';
+      return '<div class="metric-card" style="padding:12px"><div class="metric-label">'+iconoGrupo(nombre)+' '+nombre+'</div><div class="metric-value" style="font-size:18px">$'+datos.amt.toLocaleString('es-MX',{maximumFractionDigits:0})+'</div><div class="metric-sub">'+pct+'% · '+datos.qty.toLocaleString('es-MX',{maximumFractionDigits:0})+' uds</div></div>';
+    }).join('');
+  }
+
+  // Render tabla productos (top 20 por defecto)
+  g('v-prod-count').textContent=todos.length+' productos · $'+totalGen.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2});
+  renderProductosTabla(todos.slice(0,20));
+}
+
+function renderProductosTabla(lista){
+  var tb=g('v-prod-table');
+  if(!lista||lista.length===0){tb.innerHTML='<tr><td colspan="5" class="empty">Sin productos vendidos</td></tr>';return;}
+  tb.innerHTML=lista.map(function(p,i){
+    var nombre=p.Description||'—';
+    var grupo=p.GroupName||'—';
+    var qty=p.Quantity||0;
+    var amt=p.Amount||0;
+    var badgeOnline=p.esOnline?' <span class="badge badge-blue" style="font-size:9px">🌐 online</span>':'';
+    return '<tr><td>'+(i+1)+'</td><td><strong>'+nombre+'</strong>'+badgeOnline+'</td><td><span class="badge badge-green">'+grupo+'</span></td><td style="text-align:right">'+qty.toLocaleString('es-MX',{maximumFractionDigits:3})+'</td><td style="text-align:right;color:#4ade80">$'+amt.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2})+'</td></tr>';
+  }).join('');
+}
+
+function toggleProductos(){
+  var all=window.allProductos||[];
+  var btn=g('btn-prod-toggle');
+  if(window.productosExpanded){
+    renderProductosTabla(all.slice(0,20));
+    btn.textContent='Ver todos';
+    window.productosExpanded=false;
+  }else{
+    renderProductosTabla(all);
+    btn.textContent='Ver solo top 20';
+    window.productosExpanded=true;
+  }
+}
+
+function descargarProductosCSV(){
+  var all=window.allProductos||[];
+  if(all.length===0){alert('No hay productos para descargar');return;}
+  var rx=getRange();
+  var periodo=rx.from===rx.to?rx.from:(rx.from+'_a_'+rx.to);
+  // Header con BOM para que Excel reconozca UTF-8 (acentos)
+  var csv='\uFEFF#,Producto,Grupo,Tipo,Unidades,Ventas\n';
+  all.forEach(function(p,i){
+    var nombre=String(p.Description||'').replace(/"/g,'""');
+    var grupo=String(p.GroupName||'').replace(/"/g,'""');
+    var tipo=p.esOnline?'Online':'POS';
+    var qty=(p.Quantity||0).toString();
+    var amt=(p.Amount||0).toFixed(2);
+    csv+=(i+1)+',"'+nombre+'","'+grupo+'","'+tipo+'",'+qty+','+amt+'\n';
+  });
+  // Crear blob y descargar
+  var blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');
+  a.href=url;
+  a.download='productos_ventas_'+periodo+'.csv';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  console.log('[CSV] descargado: '+all.length+' productos');
 }
 
 function renderRedencion(items){
